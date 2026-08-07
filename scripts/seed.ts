@@ -85,19 +85,62 @@ async function seedVolunteers() {
   ];
 
   for (const u of seedUsers) {
+    console.log("Creating user:", u.email);
     const { data, error } = await supabase.auth.admin.createUser({
       email: u.email,
       password: "EduTrack123!",
       email_confirm: true,
       user_metadata: { name: u.name },
     });
-    if (error) {
-      console.warn(`  Skipping ${u.email}: ${error.message}`);
-      continue;
-    }
-    // The on_auth_user_created trigger inserts the volunteers row; patch the role.
-    await supabase.from("volunteers").update({ role: u.role, phone: faker.phone.number() }).eq("id", data.user.id);
-    volunteerIds.push(data.user.id);
+    console.log("Returned from createUser");
+   if (error) {
+    console.error("\n==============================");
+    console.error("Failed to create user:", u.email);
+    console.log("Error object:", error);
+    console.log("Message:", error.message);
+    console.log("Status:", (error as any).status);
+    console.log("Code:", (error as any).code);
+    console.log("Cause:", (error as any).cause);
+    console.error("==============================\n");
+    continue;
+}
+  // Wait until the trigger creates the volunteer row
+let volunteer = null;
+
+for (let i = 0; i < 20; i++) {
+  const { data: row } = await supabase
+    .from("volunteers")
+    .select("id")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (row) {
+    volunteer = row;
+    break;
+  }
+
+  await new Promise((r) => setTimeout(r, 300));
+}
+
+if (!volunteer) {
+  console.error("Volunteer row was never created:", u.email);
+  continue;
+}
+
+const { error: updateError } = await supabase
+  .from("volunteers")
+  .update({
+    role: u.role,
+    phone: faker.phone.number(),
+  })
+  .eq("id", data.user.id);
+
+if (updateError) {
+  console.error(updateError);
+  continue;
+}
+
+volunteerIds.push(data.user.id);
   }
 
   console.log(`  ${volunteerIds.length} volunteers seeded. Login password for all: EduTrack123!`);
