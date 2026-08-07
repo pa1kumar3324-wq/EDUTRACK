@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const type = searchParams.get("type") ?? "students";
 
   let rows: Record<string, unknown>[] = [];
-  let filename = `edutrack-${type}`;
+  const filename = `edutrack-${type}`;
 
   if (type === "students") {
     const { data, error } = await supabase
