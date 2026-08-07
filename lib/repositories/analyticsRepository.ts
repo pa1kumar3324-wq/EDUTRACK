@@ -1,6 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/types/database";
 import type {
   AdminStats,
   CoverageEntry,
@@ -259,3 +257,4 @@ export const analyticsRepository = {
       .filter((v) => v.daysSinceUpdate >= days);
   },
 };
+

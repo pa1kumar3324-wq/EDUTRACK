@@ -13,10 +13,18 @@ export default async function AdminVolunteersPage() {
     supabase.from("assignments").select("volunteer_id"),
   ]);
 
-  const studentCounts: Record<string, number> = {};
-  for (const row of assignments.data ?? []) {
-    studentCounts[row.volunteer_id] = (studentCounts[row.volunteer_id] ?? 0) + 1;
-  }
+type AssignmentRow = {
+  volunteer_id: string;
+};
+
+const rows = (assignments.data ?? []) as AssignmentRow[];
+
+const studentCounts: Record<string, number> = {};
+
+for (const row of rows) {
+  studentCounts[row.volunteer_id] =
+    (studentCounts[row.volunteer_id] ?? 0) + 1;
+}
 
   return (
     <div className="flex flex-col gap-6">

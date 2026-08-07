@@ -1,8 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/types/database";
+import { createClient } from "@/lib/supabase/server";
 import type { VolunteerFormValues } from "@/lib/validations/roadmap";
 
-type Client = SupabaseClient<Database>;
+type Client = Awaited<ReturnType<typeof createClient>>;
 
 export const volunteerRepository = {
   async list(supabase: Client) {
@@ -49,3 +48,4 @@ export const volunteerRepository = {
     return Array.from(counts.values());
   },
 };
+

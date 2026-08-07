@@ -1,7 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/types/database";
+import { createClient } from "@/lib/supabase/server";
 
-type Client = SupabaseClient<Database>;
+type Client = Awaited<ReturnType<typeof createClient>>;
 
 export const assignmentRepository = {
   async listForStudent(supabase: Client, studentId: string) {
@@ -32,3 +31,4 @@ export const assignmentRepository = {
     if (error) throw error;
   },
 };
+

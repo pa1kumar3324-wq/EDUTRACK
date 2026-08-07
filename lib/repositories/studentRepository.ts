@@ -1,8 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import type { Database, Student } from "@/lib/types/database";
 import type { StudentFormValues } from "@/lib/validations/student";
 
-type Client = SupabaseClient<Database>;
+type Client = Awaited<ReturnType<typeof createClient>>;
 
 export interface StudentFilters {
   search?: string;
@@ -86,3 +86,4 @@ export const studentRepository = {
     return (data ?? []).map((row) => row.volunteers).flat();
   },
 };
+
