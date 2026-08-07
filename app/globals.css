@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 25% 98%;
+    --foreground: 222 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 30% 12%;
+
+    --primary: 245 58% 51%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 95%;
+    --secondary-foreground: 222 25% 20%;
+
+    --muted: 220 20% 95%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 245 58% 51%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 60% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 45%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 220 18% 90%;
+    --input: 220 18% 88%;
+    --ring: 245 58% 51%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 224 28% 7%;
+    --foreground: 220 20% 94%;
+
+    --card: 224 24% 10%;
+    --card-foreground: 220 20% 94%;
+
+    --popover: 224 24% 10%;
+    --popover-foreground: 220 20% 94%;
+
+    --primary: 245 75% 68%;
+    --primary-foreground: 224 28% 8%;
+
+    --secondary: 223 20% 15%;
+    --secondary-foreground: 220 20% 88%;
+
+    --muted: 223 20% 15%;
+    --muted-foreground: 220 10% 62%;
+
+    --accent: 245 75% 68%;
+    --accent-foreground: 224 28% 8%;
+
+    --destructive: 0 70% 62%;
+    --destructive-foreground: 224 28% 8%;
+
+    --success: 152 55% 48%;
+    --success-foreground: 224 28% 8%;
+
+    --warning: 38 92% 58%;
+    --warning-foreground: 224 28% 8%;
+
+    --border: 223 18% 18%;
+    --input: 223 18% 20%;
+    --ring: 245 75% 68%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  ::selection {
+    @apply bg-primary/25;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/70 backdrop-blur-xl backdrop-saturate-150 border border-border/60;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+}
