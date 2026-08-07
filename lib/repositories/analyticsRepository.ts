@@ -1,3 +1,4 @@
+import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
 import type {
@@ -22,7 +23,7 @@ import {
   addDays,
 } from "date-fns";
 
-type Client = SupabaseClient<Database>;
+type Client = Awaited<ReturnType<typeof createClient>>;
 
 export const analyticsRepository = {
   async adminStats(supabase: Client): Promise<AdminStats> {

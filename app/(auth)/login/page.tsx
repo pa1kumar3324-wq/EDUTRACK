@@ -36,7 +36,8 @@ export default function LoginPage() {
     let destination = searchParams.get("redirectTo");
     if (!destination && user) {
       const { data: profile } = await supabase.from("volunteers").select("role").eq("id", user.id).single();
-      destination = profile?.role === "admin" ? "/admin" : "/dashboard";
+      const role = (profile as { role: string } | null)?.role;
+destination = role === "admin" ? "/admin" : "/dashboard";;
     }
 
     setIsLoading(false);

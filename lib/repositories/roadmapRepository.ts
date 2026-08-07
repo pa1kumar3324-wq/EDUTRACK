@@ -1,8 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/types/database";
+import { createClient } from "@/lib/supabase/server";
 import type { RoadmapEntryFormValues } from "@/lib/validations/roadmap";
 
-type Client = SupabaseClient<Database>;
+type Client = Awaited<ReturnType<typeof createClient>>;
 
 export const roadmapRepository = {
   async listByGrade(supabase: Client, grade: number) {

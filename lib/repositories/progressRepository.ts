@@ -1,8 +1,8 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, Progress } from "@/lib/types/database";
+import type { Progress } from "@/lib/types/database";
 import type { ProgressFormValues } from "@/lib/validations/progress";
+import { createClient } from "@/lib/supabase/server";
 
-type Client = SupabaseClient<Database>;
+type Client = Awaited<ReturnType<typeof createClient>>;
 
 export const progressRepository = {
   async listForStudent(supabase: Client, studentId: string) {

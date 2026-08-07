@@ -15,9 +15,19 @@ export default async function AdminReportsPage() {
     supabase.from("students_needing_revision").select("*"),
     analyticsRepository.pendingVolunteers(supabase, 14),
   ]);
+type RevisionRow = {
+  stale: boolean;
+  english_double_red: boolean;
+  math_double_red: boolean;
+  student_id: string;
+  name: string;
+  grade: string;
+};
 
-  const staleStudents = (revisionRows ?? []).filter((r) => r.stale);
-  const doubleRedStudents = (revisionRows ?? []).filter((r) => r.english_double_red || r.math_double_red);
+const rows = (revisionRows ?? []) as RevisionRow[];
+
+const staleStudents = rows.filter((r) => r.stale);
+const doubleRedStudents = rows.filter((r) => r.english_double_red || r.math_double_red);
 
   return (
     <div className="flex flex-col gap-6">
