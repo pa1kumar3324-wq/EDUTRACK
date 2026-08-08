@@ -1,6 +1,6 @@
-import type { Progress } from "@/lib/types/database";
-import type { ProgressFormValues } from "@/lib/validations/progress";
 import { createClient } from "@/lib/supabase/server";
+import type { Database, Progress } from "@/lib/types/database";
+import type { ProgressFormValues } from "@/lib/validations/progress";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -67,4 +67,3 @@ export const progressRepository = {
     return data ?? [];
   },
 };
-

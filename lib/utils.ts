@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { UnderstandingStatus } from "@/lib/types/database";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -34,7 +35,7 @@ export const LEVEL_LABELS: Record<string, string> = {
 };
 
 export const STATUS_META: Record<
-  string,
+  UnderstandingStatus,
   { label: string; emoji: string; className: string }
 > = {
   independent: {

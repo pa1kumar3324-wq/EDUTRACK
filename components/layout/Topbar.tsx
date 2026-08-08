@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { LogOut, Moon, Sun, User as UserIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { createClient } from "@/lib/supabase/client";
-import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,14 +30,12 @@ export function Topbar({ user, title }: { user: AuthUser; title?: string }) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
-      {title && <h1 className="hidden shrink-0 font-display text-sm font-semibold md:block md:text-base">{title}</h1>}
-
-      <div className="flex flex-1 justify-center sm:justify-start">
-        <GlobalSearch />
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
+      <div className="flex items-center gap-2">
+        {title && <h1 className="font-display text-sm font-semibold md:text-base">{title}</h1>}
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"

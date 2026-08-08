@@ -37,15 +37,14 @@ export const volunteerRepository = {
   },
 
   async studentsPerVolunteer(supabase: Client) {
-    const { data, error } = await supabase.from("assignments").select("volunteer_id, volunteers(name)");
+    const { data, error } = await supabase.from("assignments").select("volunteer_id, volunteers!assignments_volunteer_id_fkey(name)");
     if (error) throw error;
     const counts = new Map<string, { name: string; count: number }>();
     for (const row of data ?? []) {
-      const name = (row.volunteers as unknown as { name: string } | null)?.name ?? "Unknown";
+      const name = row.volunteers?.name ?? "Unknown";
       const existing = counts.get(row.volunteer_id);
       counts.set(row.volunteer_id, { name, count: (existing?.count ?? 0) + 1 });
     }
     return Array.from(counts.values());
   },
 };
-

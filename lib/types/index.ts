@@ -42,34 +42,6 @@ export interface VolunteerActivityPoint {
   studentsAssigned: number;
 }
 
-export interface CoverageEntry {
-  student: { id: string; name: string; grade: number; photo_url: string | null };
-  updated: boolean;
-  volunteerName: string | null;
-  updatedAt: string | null;
-  assignedVolunteers: string[];
-}
-
-export interface CoverageSummary {
-  weekendLabel: string;
-  weekendStart: string;
-  weekendEnd: string;
-  weekOffset: number;
-  totalStudents: number;
-  updatedCount: number;
-  missingCount: number;
-  coveragePercent: number;
-  entries: CoverageEntry[];
-}
-
-export interface SearchResultItem {
-  type: "student" | "volunteer";
-  id: string;
-  label: string;
-  sublabel: string;
-  href: string;
-}
-
 export interface RecentActivityItem {
   id: string;
   studentId: string;

@@ -13,23 +13,28 @@ export default async function AdminVolunteersPage() {
     supabase.from("assignments").select("volunteer_id"),
   ]);
 
-type AssignmentRow = {
-  volunteer_id: string;
-};
+  const studentCounts: Record<string, number> = {};
 
-const rows = (assignments.data ?? []) as AssignmentRow[];
+  const assignmentRows = (assignments.data ?? []) as {
+    volunteer_id: string;
+  }[];
 
-const studentCounts: Record<string, number> = {};
-
-for (const row of rows) {
-  studentCounts[row.volunteer_id] =
-    (studentCounts[row.volunteer_id] ?? 0) + 1;
-}
+  for (const row of assignmentRows) {
+    studentCounts[row.volunteer_id] =
+      (studentCounts[row.volunteer_id] ?? 0) + 1;
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Volunteers" description="Invite volunteers, manage roles, and see their student load." />
-      <VolunteersTable initialVolunteers={volunteers} studentCounts={studentCounts} />
+      <PageHeader
+        title="Volunteers"
+        description="Invite volunteers, manage roles, and see their student load."
+      />
+
+      <VolunteersTable
+        initialVolunteers={volunteers}
+        studentCounts={studentCounts}
+      />
     </div>
   );
 }

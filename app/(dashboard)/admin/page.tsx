@@ -29,25 +29,26 @@ export default async function AdminOverviewPage() {
       progressRepository.recent(supabase, 8),
     ]);
 
-  const recentActivity: RecentActivityItem[] = recentRows.map((r) => {
-    const row = r as unknown as {
-      id: string;
-      student_id: string;
-      created_at: string;
-      english_topic: string | null;
-      math_topic: string | null;
-      students: { name: string } | null;
-      volunteers: { name: string } | null;
-    };
-    return {
-      id: row.id,
-      studentId: row.student_id,
-      studentName: row.students?.name ?? "Unknown",
-      volunteerName: row.volunteers?.name ?? "Unknown",
-      createdAt: row.created_at,
-      summary: row.english_topic || row.math_topic || "session logged",
-    };
-  });
+ type RecentRow = {
+  id: string;
+  student_id: string;
+  created_at: string;
+  english_topic: string | null;
+  math_topic: string | null;
+  students: { name: string } | null;
+  volunteers: { name: string } | null;
+};
+
+const recentActivity: RecentActivityItem[] = recentRows.map((r: RecentRow) => {
+  return {
+    id: r.id,
+    studentId: r.student_id,
+    studentName: r.students?.name ?? "Unknown",
+    volunteerName: r.volunteers?.name ?? "Unknown",
+    createdAt: r.created_at,
+    summary: r.english_topic || r.math_topic || "session logged",
+  };
+});
 
   return (
     <div className="flex flex-col gap-6">

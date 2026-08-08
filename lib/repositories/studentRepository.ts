@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Database, Student } from "@/lib/types/database";
+import type { Student } from "@/lib/types/database";
 import type { StudentFormValues } from "@/lib/validations/student";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
@@ -80,10 +80,9 @@ export const studentRepository = {
   async assignedVolunteers(supabase: Client, studentId: string) {
     const { data, error } = await supabase
       .from("assignments")
-      .select("volunteer_id, volunteers(*)")
+      .select("volunteer_id, volunteers!assignments_volunteer_id_fkey(*)")
       .eq("student_id", studentId);
     if (error) throw error;
     return (data ?? []).map((row) => row.volunteers).flat();
   },
 };
-

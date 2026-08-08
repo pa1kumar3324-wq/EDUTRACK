@@ -33,15 +33,15 @@ app/
     dashboard/              Volunteer home — "Your Students" cards, no search needed
     students/[id]/          Student profile: timeline, journey charts, weak areas, homework
     students/[id]/update/   Progress update form
-    admin/                  Admin-only: overview analytics, students, volunteers, roadmap, reports
-  api/                      Route handlers (students, volunteers, assignments, progress, roadmap, export, auth callback)
+    admin/                  Admin-only: overview analytics, students, volunteers, attendance, roadmap, reports
+  api/                      Route handlers (students, volunteers, assignments, progress, roadmap, attendance, export, auth callback)
 components/
-  ui/                       shadcn/ui primitives (button, card, dialog, table, tabs, select, ...)
+  ui/                       shadcn/ui primitives (button, card, dialog, table, tabs, select, checkbox, ...)
   shared/                   Cross-cutting UI: StatusBadge, LevelBadge, EmptyState, PageHeader, skeletons
   layout/                   Sidebar, Topbar, ThemeProvider
-  dashboard/                StatCard, StudentCard, RecentActivity
+  dashboard/                StatCard, StudentCard, RecentActivity, AttendancePieChart
   student/                  ProgressTimeline, JourneyChart
-  admin/                    StudentsTable, VolunteersTable, RoadmapBuilder, AnalyticsCharts, ExportPanel
+  admin/                    StudentsTable, VolunteersTable, RoadmapBuilder, AnalyticsCharts, ExportPanel, AttendanceMarker
   progress/                 ProgressForm (the "Update Progress" form)
 lib/
   supabase/                 Browser client, server client, middleware session refresh
@@ -53,7 +53,8 @@ lib/
 hooks/                      useStudents, useProgress, useAnalytics, useDebounce
 store/                      Zustand store for lightweight client UI state
 supabase/
-  schema.sql                 Full schema: tables, enums, views, RLS policies, triggers
+  schema.sql                 Full schema: tables, enums, views, RLS policies, triggers (incl. attendance)
+  migrations/001_attendance.sql  Adds just the attendance table — for projects that already ran schema.sql
   seed_roadmap.sql           Optional standalone roadmap seed (SQL-only alternative to scripts/seed.ts)
 scripts/
   seed.ts                    Seeds 10 volunteers (real Supabase Auth users), 25 students, assignments,
@@ -82,7 +83,8 @@ npm install
 
 ### 3. Set up Supabase
 1. Create a new Supabase project.
-2. Open the SQL Editor and run `supabase/schema.sql` once. This creates all tables, enums, views, RLS policies, and triggers.
+2. Open the SQL Editor and run `supabase/schema.sql` once. This creates all tables, enums, views, RLS policies, and triggers — including `attendance`, so fresh installs get the attendance feature automatically.
+   - **Upgrading an existing project?** Don't re-run `schema.sql` (it isn't idempotent). Instead run `supabase/migrations/001_attendance.sql` once — it only adds the new `attendance` table, index, trigger, and RLS policies.
 3. From **Project Settings → API**, copy your Project URL, anon key, and service role key.
 
 ### 4. Configure environment variables
@@ -141,7 +143,7 @@ Admins invite volunteers from **Admin → Volunteers → Invite volunteer**. Thi
 ### Post-deploy checklist
 - [ ] Confirm `students_needing_revision` and `latest_progress` views exist (`select * from latest_progress limit 1;` in the SQL editor)
 - [ ] Invite your first real admin from the Supabase dashboard, or seed with `npm run seed` against production (only do this on a fresh project — it creates real auth users)
-- [ ] Verify RLS is enabled on all five tables (`schema.sql` does this, but double-check under **Authentication → Policies**)
+- [ ] Verify RLS is enabled on all six tables (`schema.sql` does this, but double-check under **Authentication → Policies**)
 - [ ] Set up Supabase's daily backups (Free tier: manual export; Pro tier: automatic)
 
 ---
@@ -158,6 +160,16 @@ Admins invite volunteers from **Admin → Volunteers → Invite volunteer**. Thi
 | Manage the learning roadmap | ❌ | ✅ |
 | View analytics & export reports | ❌ | ✅ |
 | Invite volunteers / change roles | ❌ | ✅ |
+| Mark volunteer attendance | ❌ | ✅ |
+| View own attendance history | ✅ (read-only) | ✅ (all volunteers) |
+
+## Volunteer attendance
+
+Leaders (admins) mark attendance from **Admin → Attendance**: pick a session date, then tap Present / Late / Absent / Excused per volunteer, or use "Mark all present" for a quick pass. Each save is an upsert keyed on `(volunteer_id, session_date)`, so re-marking the same day just updates the existing record instead of creating duplicates.
+
+Volunteers see their own present/late/absent/excused breakdown as a donut chart on their dashboard (`components/dashboard/AttendancePieChart.tsx`) — computed from `attendanceRepository.summaryForVolunteer`.
+
+Admins can export the full attendance log (CSV, Excel, or PDF) from **Admin → Reports & Alerts**, alongside the existing students and progress exports.
 
 This is enforced in two layers: Postgres Row Level Security policies (the source of truth — see `supabase/schema.sql`) and `requireAdmin()` guards in Server Components / API routes (a fast-fail UX layer, not a security boundary on its own).
 
@@ -174,5 +186,3 @@ After every progress submission, `lib/utils/suggestionEngine.ts` generates a one
 ## License
 
 Built for internal NGO use. Adapt freely.
->>>>>>> c9247ea (first commit with project skeleton)
-

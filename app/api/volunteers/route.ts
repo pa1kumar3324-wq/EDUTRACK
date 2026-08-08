@@ -39,8 +39,16 @@ export async function POST(request: Request) {
   const { createClient: createServiceClient } = await import("@supabase/supabase-js");
   const admin = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
 
+  // Land the invitee on /set-password (via the auth callback, which exchanges
+  // the invite code for a session) instead of straight into the dashboard —
+  // inviteUserByEmail never sets a password, so without this they'd have no
+  // way to sign back in once that first session expires.
+  const { origin } = new URL(request.url);
+  const redirectTo = `${origin}/api/auth/callback?next=${encodeURIComponent("/set-password")}`;
+
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { name },
+    redirectTo,
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

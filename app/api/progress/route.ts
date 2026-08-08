@@ -44,11 +44,7 @@ export async function POST(request: Request) {
         ? "math"
         : "english";
 
-    const recommendation = recommendNextTopic(
-      primarySubject,
-      roadmap,
-      history as unknown as import("@/lib/types/database").Progress[]
-    );
+    const recommendation = recommendNextTopic(primarySubject, roadmap, history);
 
     const status = primarySubject === "english" ? values.english_status : values.math_status;
     const topic = primarySubject === "english" ? values.english_topic : values.math_topic;

@@ -7,6 +7,21 @@ import { ExportPanel } from "@/components/admin/ExportPanel";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+type RevisionRow = {
+  student_id: string;
+  name: string;
+  grade: number;
+  stale: boolean;
+  english_double_red: boolean;
+  math_double_red: boolean;
+};
+
+type PendingVolunteer = {
+  id: string;
+  name: string;
+  daysSinceUpdate: number;
+};
+
 export default async function AdminReportsPage() {
   await requireAdmin();
   const supabase = await createClient();
@@ -15,40 +30,56 @@ export default async function AdminReportsPage() {
     supabase.from("students_needing_revision").select("*"),
     analyticsRepository.pendingVolunteers(supabase, 14),
   ]);
-type RevisionRow = {
-  stale: boolean;
-  english_double_red: boolean;
-  math_double_red: boolean;
-  student_id: string;
-  name: string;
-  grade: string;
-};
 
-const rows = (revisionRows ?? []) as RevisionRow[];
+  const typedRevisionRows = (revisionRows ?? []) as RevisionRow[];
 
-const staleStudents = rows.filter((r) => r.stale);
-const doubleRedStudents = rows.filter((r) => r.english_double_red || r.math_double_red);
+  const typedPendingVolunteers =
+    (pendingVolunteers ?? []) as PendingVolunteer[];
+
+  const staleStudents = typedRevisionRows.filter((r) => r.stale);
+
+  const doubleRedStudents = typedRevisionRows.filter(
+    (r) => r.english_double_red || r.math_double_red
+  );
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Reports & Notifications" description="Export data and see who needs attention." />
+      <PageHeader
+        title="Reports & Notifications"
+        description="Export data and see who needs attention."
+      />
 
       <ExportPanel />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm"><Clock className="h-4 w-4 text-warning" /> Not updated in 14+ days</CardTitle>
-            <CardDescription>{staleStudents.length} student(s)</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-warning" />
+              Not updated in 14+ days
+            </CardTitle>
+
+            <CardDescription>
+              {staleStudents.length} student(s)
+            </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-2">
             {staleStudents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Everyone's up to date. 🎉</p>
+              <p className="text-sm text-muted-foreground">
+                Everyone&apos;s up to date. 🎉
+              </p>
             ) : (
               staleStudents.map((s) => (
-                <div key={s.student_id} className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2 text-sm">
+                <div
+                  key={s.student_id}
+                  className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2 text-sm"
+                >
                   <span>{s.name}</span>
-                  <Badge variant="warning">Grade {s.grade}</Badge>
+
+                  <Badge variant="warning">
+                    Grade {s.grade}
+                  </Badge>
                 </div>
               ))
             )}
@@ -57,17 +88,32 @@ const doubleRedStudents = rows.filter((r) => r.english_double_red || r.math_doub
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm"><AlertTriangle className="h-4 w-4 text-destructive" /> Marked 🔴 twice in a row</CardTitle>
-            <CardDescription>{doubleRedStudents.length} student(s)</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              Marked 🔴 twice in a row
+            </CardTitle>
+
+            <CardDescription>
+              {doubleRedStudents.length} student(s)
+            </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-2">
             {doubleRedStudents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No repeated struggles flagged.</p>
+              <p className="text-sm text-muted-foreground">
+                No repeated struggles flagged.
+              </p>
             ) : (
               doubleRedStudents.map((s) => (
-                <div key={s.student_id} className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2 text-sm">
+                <div
+                  key={s.student_id}
+                  className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2 text-sm"
+                >
                   <span>{s.name}</span>
-                  <Badge variant="destructive">Grade {s.grade}</Badge>
+
+                  <Badge variant="destructive">
+                    Grade {s.grade}
+                  </Badge>
                 </div>
               ))
             )}
@@ -76,18 +122,33 @@ const doubleRedStudents = rows.filter((r) => r.english_double_red || r.math_doub
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm"><UserX className="h-4 w-4 text-muted-foreground" /> Volunteers with pending updates</CardTitle>
-            <CardDescription>{pendingVolunteers.length} volunteer(s)</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <UserX className="h-4 w-4 text-muted-foreground" />
+              Volunteers with pending updates
+            </CardTitle>
+
+            <CardDescription>
+              {typedPendingVolunteers.length} volunteer(s)
+            </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-2">
-            {pendingVolunteers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">All volunteers are current.</p>
+            {typedPendingVolunteers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                All volunteers are current.
+              </p>
             ) : (
-              pendingVolunteers.map((v) => (
-                <div key={v.id} className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2 text-sm">
+              typedPendingVolunteers.map((v) => (
+                <div
+                  key={v.id}
+                  className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2 text-sm"
+                >
                   <span>{v.name}</span>
+
                   <Badge variant="outline">
-                    {v.daysSinceUpdate === Infinity ? "No updates yet" : `${v.daysSinceUpdate}d ago`}
+                    {v.daysSinceUpdate === Infinity
+                      ? "No updates yet"
+                      : `${v.daysSinceUpdate}d ago`}
                   </Badge>
                 </div>
               ))

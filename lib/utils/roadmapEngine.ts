@@ -53,7 +53,8 @@ export function recommendNextTopic(
   if (lastStatus === "not_understood" || lastStatus === "needs_help") {
     return {
       subject,
-      topic: lastTopic ?? subjectRoadmap[0].topic,
+      // Non-null: `subjectRoadmap.length === 0` returned above, so index 0 exists.
+      topic: lastTopic ?? subjectRoadmap[0]!.topic,
       reason:
         lastStatus === "not_understood"
           ? `Last session the student didn't grasp "${lastTopic}" — revisit before advancing.`
@@ -71,7 +72,8 @@ export function recommendNextTopic(
   if (!next) {
     return {
       subject,
-      topic: lastTopic ?? subjectRoadmap[subjectRoadmap.length - 1].topic,
+      // Non-null: `subjectRoadmap.length === 0` returned above, so the last index exists.
+      topic: lastTopic ?? subjectRoadmap[subjectRoadmap.length - 1]!.topic,
       reason: "Student has completed the full roadmap for this grade — consider enrichment or the next grade level.",
       isRevision: false,
     };

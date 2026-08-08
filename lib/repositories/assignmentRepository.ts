@@ -6,7 +6,7 @@ export const assignmentRepository = {
   async listForStudent(supabase: Client, studentId: string) {
     const { data, error } = await supabase
       .from("assignments")
-      .select("*, volunteers(*)")
+      .select("*, volunteers!assignments_volunteer_id_fkey(*)")
       .eq("student_id", studentId);
     if (error) throw error;
     return data ?? [];
@@ -31,4 +31,3 @@ export const assignmentRepository = {
     if (error) throw error;
   },
 };
-

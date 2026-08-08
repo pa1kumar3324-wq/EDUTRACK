@@ -11,7 +11,7 @@ import {
   BarChart3,
   FileDown,
   Bell,
-  CalendarCheck2,
+  CalendarCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AuthUser } from "@/lib/types";
@@ -20,9 +20,9 @@ const volunteerNav = [{ href: "/dashboard", label: "Your Students", icon: Layout
 
 const adminNav = [
   { href: "/admin", label: "Analytics", icon: BarChart3 },
-  { href: "/admin/coverage", label: "Coverage", icon: CalendarCheck2 },
   { href: "/admin/students", label: "Students", icon: Users },
   { href: "/admin/volunteers", label: "Volunteers", icon: UserCog },
+  { href: "/admin/attendance", label: "Attendance", icon: CalendarCheck },
   { href: "/admin/roadmap", label: "Roadmap", icon: Map },
   { href: "/admin/reports", label: "Reports & Alerts", icon: FileDown },
 ];

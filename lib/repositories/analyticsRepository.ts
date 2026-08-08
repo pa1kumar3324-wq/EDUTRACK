@@ -1,25 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import type {
   AdminStats,
-  CoverageEntry,
-  CoverageSummary,
   DashboardStats,
   LevelDistributionPoint,
   VolunteerActivityPoint,
   WeakTopicPoint,
   WeeklyProgressPoint,
 } from "@/lib/types";
-import {
-  startOfWeek,
-  subWeeks,
-  format,
-  isToday,
-  differenceInCalendarDays,
-  startOfDay,
-  endOfDay,
-  subDays,
-  addDays,
-} from "date-fns";
+import type { Student } from "@/lib/types/database";
+import { startOfWeek, subWeeks, format, isToday, differenceInCalendarDays } from "date-fns";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -111,7 +100,11 @@ export const analyticsRepository = {
     const order = ["beginner", "developing", "proficient", "advanced"];
     const counts = new Map(order.map((l) => [l, 0]));
     for (const row of data ?? []) {
-      const level = (row as Record<string, string>)[column];
+      // `column` is one of the two literal level columns, so this narrows
+      // the loosely-typed dynamic-column select back to a known field
+      // instead of casting to an index-signature type (which would be
+      // `string | undefined` under `noUncheckedIndexedAccess`).
+      const level = (row as Pick<Student, "english_level" | "math_level">)[column];
       counts.set(level, (counts.get(level) ?? 0) + 1);
     }
     return order.map((level) => ({ level, count: counts.get(level) ?? 0 }));
@@ -157,78 +150,6 @@ export const analyticsRepository = {
     }));
   },
 
-  /**
-   * Answers "which students were updated this weekend?" for the Coverage dashboard.
-   * `weekOffset` of 0 is the most recent Sat–Sun (or the one in progress); 1 is the
-   * weekend before that, etc. A student counts as "updated" if any progress row
-   * falls inside the Saturday 00:00 → Sunday 23:59:59 window.
-   */
-  async weekendCoverage(supabase: Client, weekOffset = 0): Promise<CoverageSummary> {
-    const now = new Date();
-    const daysSinceSaturday = (now.getDay() - 6 + 7) % 7; // Sat=6 → 0, Sun=0 → 1, Mon=1 → 2, ...
-    const mostRecentSaturday = startOfDay(subDays(now, daysSinceSaturday));
-    const saturday = subDays(mostRecentSaturday, weekOffset * 7);
-    const sunday = endOfDay(addDays(saturday, 1));
-
-    const [{ data: students }, { data: progressRows }, { data: assignmentRows }] = await Promise.all([
-      supabase.from("students").select("id, name, grade, photo_url").eq("is_active", true).order("name"),
-      supabase
-        .from("progress")
-        .select("student_id, created_at, volunteers(name)")
-        .gte("created_at", saturday.toISOString())
-        .lte("created_at", sunday.toISOString()),
-      // volunteers!volunteer_id disambiguates: assignments has two FKs into volunteers
-      // (volunteer_id and assigned_by), so an unqualified embed is ambiguous in PostgREST.
-      supabase.from("assignments").select("student_id, volunteers!volunteer_id(name)"),
-    ]);
-
-    const latestByStudent = new Map<string, { volunteerName: string; updatedAt: string }>();
-    for (const row of progressRows ?? []) {
-      const volunteerName = (row.volunteers as unknown as { name: string } | null)?.name ?? "Unknown";
-      const existing = latestByStudent.get(row.student_id);
-      if (!existing || new Date(row.created_at) > new Date(existing.updatedAt)) {
-        latestByStudent.set(row.student_id, { volunteerName, updatedAt: row.created_at });
-      }
-    }
-
-    const assignedByStudent = new Map<string, string[]>();
-    for (const row of assignmentRows ?? []) {
-      const name = (row.volunteers as unknown as { name: string } | null)?.name ?? "Unknown";
-      const list = assignedByStudent.get(row.student_id) ?? [];
-      list.push(name);
-      assignedByStudent.set(row.student_id, list);
-    }
-
-    const entries: CoverageEntry[] = (students ?? []).map((s) => {
-      const latest = latestByStudent.get(s.id);
-      return {
-        student: { id: s.id, name: s.name, grade: s.grade, photo_url: s.photo_url },
-        updated: !!latest,
-        volunteerName: latest?.volunteerName ?? null,
-        updatedAt: latest?.updatedAt ?? null,
-        assignedVolunteers: assignedByStudent.get(s.id) ?? [],
-      };
-    });
-
-    entries.sort((a, b) => Number(a.updated) - Number(b.updated) || a.student.name.localeCompare(b.student.name));
-
-    const totalStudents = entries.length;
-    const updatedCount = entries.filter((e) => e.updated).length;
-    const missingCount = totalStudents - updatedCount;
-
-    return {
-      weekendLabel: `${format(saturday, "MMM d")} – ${format(sunday, "MMM d, yyyy")}`,
-      weekendStart: saturday.toISOString(),
-      weekendEnd: sunday.toISOString(),
-      weekOffset,
-      totalStudents,
-      updatedCount,
-      missingCount,
-      coveragePercent: totalStudents === 0 ? 0 : Math.round((updatedCount / totalStudents) * 100),
-      entries,
-    };
-  },
-
   /** Volunteers who haven't logged an update for any assigned student in `days`. */
   async pendingVolunteers(supabase: Client, days = 14) {
     const [{ data: volunteers }, { data: assignments }, { data: progressRows }] = await Promise.all([
@@ -257,4 +178,3 @@ export const analyticsRepository = {
       .filter((v) => v.daysSinceUpdate >= days);
   },
 };
-
