@@ -42,6 +42,14 @@ export interface VolunteerActivityPoint {
   studentsAssigned: number;
 }
 
+export interface SearchResultItem {
+  type: "student" | "volunteer";
+  id: string;
+  label: string;
+  sublabel: string;
+  href: string;
+}
+
 export interface RecentActivityItem {
   id: string;
   studentId: string;

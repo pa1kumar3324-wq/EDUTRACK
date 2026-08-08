@@ -26,7 +26,7 @@ export function GlobalSearch() {
   const setCommandPaletteOpen = useAppStore((s) => s.setCommandPaletteOpen);
 
   useEffect(() => {
-    function handleShortcut(e: KeyboardEvent) {
+    function handleShortcut(e: globalThis.KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setCommandPaletteOpen(true);
@@ -80,6 +80,7 @@ export function GlobalSearch() {
     setIsOpen(false);
     setQuery("");
     setResults([]);
+    setActiveIndex(0);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -92,7 +93,11 @@ export function GlobalSearch() {
       setActiveIndex((i) => (i - 1 + results.length) % results.length);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      select(results[activeIndex]);
+      const activeResult = results[activeIndex];
+
+      if (activeResult) {
+        select(activeResult);
+      }
     } else if (e.key === "Escape") {
       setIsOpen(false);
     }
@@ -117,6 +122,7 @@ export function GlobalSearch() {
         aria-label="Global search"
         role="combobox"
         aria-expanded={showDropdown}
+        aria-controls="global-search-results"
         aria-autocomplete="list"
         className="h-8 w-full rounded-lg border border-border bg-secondary/50 pl-8 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:bg-background"
       />
@@ -130,7 +136,7 @@ export function GlobalSearch() {
       </kbd>
 
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-10 z-50 max-h-80 overflow-y-auto rounded-xl border border-border bg-popover p-1.5 shadow-soft-lg scrollbar-thin">
+        <div id="global-search-results" className="absolute left-0 right-0 top-10 z-50 max-h-80 overflow-y-auto rounded-xl border border-border bg-popover p-1.5 shadow-soft-lg scrollbar-thin">
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 px-3 py-6 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching...

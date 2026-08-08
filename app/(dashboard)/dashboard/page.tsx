@@ -1,5 +1,6 @@
 import {
   Users,
+  Users as UsersIcon,
   CalendarCheck,
   ListTodo,
   AlertTriangle,
@@ -21,7 +22,6 @@ import type {
   LatestProgress,
 } from "@/lib/types";
 import type { Student } from "@/lib/types/database";
-import { Users as UsersIcon } from "lucide-react";
 
 type RevisionRow = {
   student_id: string;
