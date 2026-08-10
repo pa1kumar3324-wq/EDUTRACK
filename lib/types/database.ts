@@ -103,6 +103,29 @@ export type Attendance = {
   updated_at: string;
 };
 
+/**
+ * A leader-set STARTING BASELINE for a student's roadmap position, per
+ * subject. It establishes where the student's roadmap begins — it is not a
+ * permanent pin. Automatic recommendation (`recommendNextTopic`) still
+ * drives the student forward from this point once progress is recorded; see
+ * `resolveRoadmapPosition` in lib/utils/roadmapEngine.ts for the combined
+ * resolution logic every roadmap consumer must use.
+ * At most one row per (student_id, subject).
+ */
+export type StudentRoadmapPosition = {
+  id: string;
+  student_id: string;
+  subject: Subject;
+  roadmap_id: string;
+  set_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StudentRoadmapPositionWithTopic = StudentRoadmapPosition & {
+  learning_roadmap: LearningRoadmapEntry | null;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -188,6 +211,38 @@ export interface Database {
           {
             foreignKeyName: "attendance_marked_by_fkey";
             columns: ["marked_by"];
+            isOneToOne: false;
+            referencedRelation: "volunteers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      student_roadmap_positions: {
+        Row: StudentRoadmapPosition;
+        Insert: Partial<StudentRoadmapPosition> & {
+          student_id: string;
+          subject: Subject;
+          roadmap_id: string;
+        };
+        Update: Partial<StudentRoadmapPosition>;
+        Relationships: [
+          {
+            foreignKeyName: "student_roadmap_positions_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_roadmap_positions_roadmap_id_fkey";
+            columns: ["roadmap_id"];
+            isOneToOne: false;
+            referencedRelation: "learning_roadmap";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_roadmap_positions_set_by_fkey";
+            columns: ["set_by"];
             isOneToOne: false;
             referencedRelation: "volunteers";
             referencedColumns: ["id"];

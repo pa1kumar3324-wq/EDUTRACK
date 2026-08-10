@@ -4,26 +4,18 @@ import { requireAdmin } from "@/lib/auth";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 
-/** Every ISO date ("YYYY-MM-DD") from `from` to `to`, inclusive. */
-function dateRange(from: string, to: string): string[] {
-  const dates: string[] = [];
-  const cursor = new Date(`${from}T00:00:00Z`);
-  const end = new Date(`${to}T00:00:00Z`);
-  while (cursor <= end) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-  return dates;
-}
-
 /**
  * GET /api/export?format=csv|xlsx|json&type=students|progress|attendance — admin only.
  * Streams back the requested file as a download (json is used internally to
  * build client-side PDFs — see the Reports page's ExportPanel).
  *
- * Attendance is exported as a register: one row per volunteer, one column
- * per date in [from, to], with that volunteer's status in each cell (blank
- * if no attendance record exists for that day).
+ * Attendance is exported as a register: one row per volunteer, with one
+ * column per date that ACTUALLY has at least one attendance record in
+ * [from, to] (this app only takes attendance on weekends, so most calendar
+ * days have none — those days must not appear as columns at all). A missing
+ * cell means no session/no entry for that volunteer that day, not "absent".
+ * If nothing was recorded in the range at all, all formats return a small
+ * JSON `{ empty: true, message }` payload instead of a file.
  */
 export async function GET(request: Request) {
   await requireAdmin();
@@ -63,36 +55,55 @@ export async function GET(request: Request) {
     }));
   } else if (type === "attendance") {
     // `from`/`to` are guaranteed defined here (checked above).
-    const dates = dateRange(from!, to!);
-
-    const [{ data: volunteers, error: volunteersError }, { data: records, error: recordsError }] =
-      await Promise.all([
-        supabase.from("volunteers").select("id, name").eq("is_active", true).order("name"),
-        supabase
-          .from("attendance")
-          .select("volunteer_id, session_date, status")
-          .gte("session_date", from!)
-          .lte("session_date", to!),
-      ]);
-    if (volunteersError) return NextResponse.json({ error: volunteersError.message }, { status: 500 });
+    //
+    // This app only takes attendance on weekends (occasionally a weekday by
+    // mistake), so a report must NOT create a column for every calendar day
+    // in the range — that would produce a mostly-blank register and would
+    // wrongly imply "no record" means "absent". The only source of truth is
+    // which dates actually have at least one row in `attendance`.
+    const { data: records, error: recordsError } = await supabase
+      .from("attendance")
+      .select("volunteer_id, session_date, status")
+      .gte("session_date", from!)
+      .lte("session_date", to!);
     if (recordsError) return NextResponse.json({ error: recordsError.message }, { status: 500 });
 
-    // volunteer_id -> session_date -> status
-    const statusByVolunteer = new Map<string, Map<string, string>>();
-    for (const record of records ?? []) {
-      const byDate = statusByVolunteer.get(record.volunteer_id) ?? new Map<string, string>();
-      byDate.set(record.session_date, record.status);
-      statusByVolunteer.set(record.volunteer_id, byDate);
-    }
+    // Unique session dates that actually have an attendance entry, sorted chronologically.
+    const dates = Array.from(new Set((records ?? []).map((r) => r.session_date))).sort();
 
-    rows = (volunteers ?? []).map((v) => {
-      const byDate = statusByVolunteer.get(v.id);
-      const row: Record<string, unknown> = { Name: v.name };
-      for (const date of dates) {
-        row[date] = byDate?.get(date) ?? "";
+    if (dates.length === 0) {
+      // No attendance was ever entered in this range — return a clean empty
+      // result rather than a huge calendar of blank columns. The client is
+      // responsible for surfacing "No attendance records found for this
+      // date range." instead of downloading an empty file.
+      rows = [];
+    } else {
+      const { data: volunteers, error: volunteersError } = await supabase
+        .from("volunteers")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("name");
+      if (volunteersError) return NextResponse.json({ error: volunteersError.message }, { status: 500 });
+
+      // volunteer_id -> session_date -> status
+      const statusByVolunteer = new Map<string, Map<string, string>>();
+      for (const record of records ?? []) {
+        const byDate = statusByVolunteer.get(record.volunteer_id) ?? new Map<string, string>();
+        byDate.set(record.session_date, record.status);
+        statusByVolunteer.set(record.volunteer_id, byDate);
       }
-      return row;
-    });
+
+      rows = (volunteers ?? []).map((v) => {
+        const byDate = statusByVolunteer.get(v.id);
+        const row: Record<string, unknown> = { Name: v.name };
+        for (const date of dates) {
+          // Missing entry means no session/no attendance record for that
+          // volunteer on that date — NOT "absent". Leave the cell blank.
+          row[date] = byDate?.get(date) ?? "";
+        }
+        return row;
+      });
+    }
   } else {
     const { data, error } = await supabase
       .from("progress")
@@ -110,6 +121,18 @@ export async function GET(request: Request) {
       "Math Status": row.math_status ?? "",
       Homework: row.homework ?? "",
     }));
+  }
+
+  if (type === "attendance" && rows.length === 0) {
+    // Empty range: no attendance was ever entered here. Respond with a
+    // small, explicit JSON payload (regardless of requested format) so the
+    // client can show "No attendance records found for this date range."
+    // instead of downloading a blank file.
+    return NextResponse.json({
+      rows: [],
+      empty: true,
+      message: "No attendance records found for this date range.",
+    });
   }
 
   if (format === "csv") {

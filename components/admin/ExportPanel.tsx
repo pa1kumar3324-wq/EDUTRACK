@@ -9,11 +9,21 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-async function downloadBlob(url: string, filename: string) {
+async function downloadBlob(url: string, filename: string): Promise<{ downloaded: boolean; message?: string }> {
   const res = await fetch(url);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? "Export failed");
+  }
+  // The attendance export returns a small JSON payload instead of a file
+  // when there's nothing to report for the selected range — detect that
+  // instead of downloading an unhelpful empty CSV/XLSX.
+  const contentType = res.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const body = await res.json().catch(() => ({}));
+    if (body.empty) {
+      return { downloaded: false, message: body.message ?? "No attendance records found for this date range." };
+    }
   }
   const blob = await res.blob();
   const link = document.createElement("a");
@@ -21,6 +31,7 @@ async function downloadBlob(url: string, filename: string) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(link.href);
+  return { downloaded: true };
 }
 
 /** ISO "YYYY-MM-DD" for a given Date, in local time. */
@@ -78,7 +89,13 @@ export function ExportPanel() {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error ?? "Export failed");
         }
-        const { rows } = await res.json();
+        const body = await res.json();
+        const { rows } = body;
+
+        if (isAttendance && (body.empty || rows.length === 0)) {
+          toast.info(body.message ?? "No attendance records found for this date range.");
+          return;
+        }
 
         const { default: jsPDF } = await import("jspdf");
         await import("jspdf-autotable");
@@ -91,12 +108,16 @@ export function ExportPanel() {
           doc.text(`Range: ${from} to ${to}`, 14, 22);
         }
         const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
-        const body = rows.map((r: Record<string, unknown>) => columns.map((c) => String(r[c] ?? "")));
+        const body2 = rows.map((r: Record<string, unknown>) => columns.map((c) => String(r[c] ?? "")));
         // @ts-expect-error — jspdf-autotable augments jsPDF's prototype at import time
-        doc.autoTable({ head: [columns], body, startY: isAttendance ? 27 : 22, styles: { fontSize: 8 } });
+        doc.autoTable({ head: [columns], body: body2, startY: isAttendance ? 27 : 22, styles: { fontSize: 8 } });
         doc.save(`edutrack-${type}${suffix}.pdf`);
       } else {
-        await downloadBlob(`/api/export?${buildQuery(format)}`, `edutrack-${type}${suffix}.${format}`);
+        const result = await downloadBlob(`/api/export?${buildQuery(format)}`, `edutrack-${type}${suffix}.${format}`);
+        if (!result.downloaded) {
+          toast.info(result.message ?? "No attendance records found for this date range.");
+          return;
+        }
       }
       toast.success("Export ready", { description: `Downloaded as .${format}` });
     } catch (err) {

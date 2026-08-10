@@ -303,3 +303,48 @@ create policy "attendance_admin_all" on attendance for all
 
 create policy "attendance_self_select" on attendance for select
   using (volunteer_id = auth.uid());
+
+-- ----------------------------------------------------------------------------
+-- STUDENT ROADMAP POSITIONS
+-- Leader-set STARTING BASELINE for a student's roadmap topic per subject —
+-- not a permanent pin. Automatic recommendation still advances the student
+-- forward from this point once progress is recorded (see
+-- resolveRoadmapPosition in the app). Does not touch the append-only
+-- `progress` ledger. At most one row per (student_id, subject); absence of
+-- a row means "use automatic recommendation from actual progress alone".
+-- ----------------------------------------------------------------------------
+create table student_roadmap_positions (
+  id            uuid primary key default gen_random_uuid(),
+  student_id    uuid not null references students (id) on delete cascade,
+  subject       subject not null,
+  roadmap_id    uuid not null references learning_roadmap (id) on delete cascade,
+  set_by        uuid references volunteers (id) on delete set null,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  unique (student_id, subject)
+);
+
+create index idx_student_roadmap_positions_student on student_roadmap_positions (student_id);
+create index idx_student_roadmap_positions_roadmap on student_roadmap_positions (roadmap_id);
+
+create or replace function touch_student_roadmap_position_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create trigger trg_touch_student_roadmap_position
+before update on student_roadmap_positions
+for each row execute function touch_student_roadmap_position_updated_at();
+
+alter table student_roadmap_positions enable row level security;
+
+create policy "student_roadmap_positions_select_all" on student_roadmap_positions for select
+  using (auth.role() = 'authenticated');
+
+create policy "student_roadmap_positions_admin_write" on student_roadmap_positions for all
+  using (is_admin()) with check (is_admin());

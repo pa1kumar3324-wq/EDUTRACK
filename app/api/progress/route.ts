@@ -4,13 +4,16 @@ import { progressSchema } from "@/lib/validations/progress";
 import { progressRepository } from "@/lib/repositories/progressRepository";
 import { roadmapRepository } from "@/lib/repositories/roadmapRepository";
 import { studentRepository } from "@/lib/repositories/studentRepository";
-import { recommendNextTopic } from "@/lib/utils/roadmapEngine";
+import { studentRoadmapPositionRepository } from "@/lib/repositories/studentRoadmapPositionRepository";
+import { resolveRoadmapPosition } from "@/lib/utils/roadmapEngine";
 import { generateAiSuggestion } from "@/lib/utils/suggestionEngine";
 
 /**
  * POST /api/progress
  * Validates + writes a progress entry, then computes the "Suggested Next
- * Lesson" using the roadmap engine (and optionally the Anthropic API).
+ * Lesson" using the same authoritative roadmap resolution logic as the rest
+ * of the app (resolveRoadmapPosition — leader-set starting baseline plus
+ * automatic recommendation), and optionally the Anthropic API.
  * RLS on the `progress` table enforces that a volunteer can only write for
  * students assigned to them; admins bypass that check.
  */
@@ -44,7 +47,24 @@ export async function POST(request: Request) {
         ? "math"
         : "english";
 
-    const recommendation = recommendNextTopic(primarySubject, roadmap, history);
+    // Use the SAME authoritative resolution logic as every other roadmap
+    // consumer (student profile, roadmap tracker) — a leader-set starting
+    // baseline is a floor, not a permanent pin, so once progress has
+    // advanced past it this naturally falls through to the automatic
+    // engine's recommendation, exactly like resolveRoadmapPosition does
+    // everywhere else.
+    const baseline = await studentRoadmapPositionRepository.getForStudentSubject(
+      supabase,
+      values.student_id,
+      primarySubject
+    );
+    const recommendation = resolveRoadmapPosition(
+      primarySubject,
+      student.grade,
+      roadmap,
+      history,
+      baseline?.learning_roadmap ?? null
+    );
 
     const status = primarySubject === "english" ? values.english_status : values.math_status;
     const topic = primarySubject === "english" ? values.english_topic : values.math_topic;
