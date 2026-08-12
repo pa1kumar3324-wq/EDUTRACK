@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { volunteerRepository } from "@/lib/repositories/volunteerRepository";
+import { getSiteUrl } from "@/lib/utils/getSiteUrl";
 
 /** GET /api/volunteers */
 export async function GET() {
@@ -17,7 +18,10 @@ export async function GET() {
 /**
  * POST /api/volunteers — admin only. Invites a volunteer via Supabase Auth
  * (magic link) and creates their `volunteers` profile row. Requires the
- * SUPABASE_SERVICE_ROLE_KEY env var to call the admin invite API.
+ * SUPABASE_SERVICE_ROLE_KEY env var to call the admin invite API, and
+ * NEXT_PUBLIC_SITE_URL (in any environment running on Vercel) so the
+ * invite email links back to the real app instead of guessing at a host —
+ * see lib/utils/getSiteUrl.ts.
  */
 export async function POST(request: Request) {
   await requireAdmin();
@@ -43,8 +47,20 @@ export async function POST(request: Request) {
   // the invite code for a session) instead of straight into the dashboard —
   // inviteUserByEmail never sets a password, so without this they'd have no
   // way to sign back in once that first session expires.
-  const { origin } = new URL(request.url);
-  const redirectTo = `${origin}/api/auth/callback?next=${encodeURIComponent("/set-password")}`;
+  //
+  // IMPORTANT: this must be built from the app's explicit, trusted canonical
+  // URL — never from this request's own origin. See lib/utils/getSiteUrl.ts
+  // for why (in short: request.url reflects whatever host this particular
+  // request happened to arrive on, e.g. an admin's localhost dev server
+  // pointed at production Supabase, which is exactly how invite emails were
+  // ending up with http://localhost:3000 links in production).
+  let siteUrl: string;
+  try {
+    siteUrl = getSiteUrl();
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
+  const redirectTo = `${siteUrl}/api/auth/callback?next=${encodeURIComponent("/set-password")}`;
 
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { name },

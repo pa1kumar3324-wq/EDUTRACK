@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { initials } from "@/lib/utils";
+import { MobileNav } from "@/components/layout/MobileNav";
 import type { AuthUser } from "@/lib/types";
 
 export function Topbar({ user, title }: { user: AuthUser; title?: string }) {
@@ -32,6 +33,7 @@ export function Topbar({ user, title }: { user: AuthUser; title?: string }) {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
       <div className="flex items-center gap-2">
+        <MobileNav user={user} />
         {title && <h1 className="font-display text-sm font-semibold md:text-base">{title}</h1>}
       </div>
 

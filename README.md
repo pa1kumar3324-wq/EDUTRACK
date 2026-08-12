@@ -96,9 +96,12 @@ Fill in:
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # only used server-side, by scripts/seed.ts and the invite API route
+NEXT_PUBLIC_SITE_URL=http://localhost:3000         # canonical URL of this deployment — see below
 ANTHROPIC_API_KEY=                                 # optional — enables richer AI-generated lesson suggestions
 ```
 `SUPABASE_SERVICE_ROLE_KEY` must **never** be exposed to the client — it's only read in `scripts/seed.ts` and in the `/api/volunteers` invite route, both of which run server-side.
+
+`NEXT_PUBLIC_SITE_URL` is the app's canonical public URL. The volunteer-invite email link is built from this — **not** from the incoming request's host — so it always points at the real app instead of whatever host a particular request happened to arrive on. Locally it defaults to `http://localhost:3000` if left unset; **in production (Vercel) it is required** — see the Deployment section below.
 
 ### 5. Seed sample data (optional but recommended)
 ```bash
@@ -133,10 +136,12 @@ Admins invite volunteers from **Admin → Volunteers → Invite volunteer**. Thi
 
 1. Push this repository to GitHub/GitLab/Bitbucket.
 2. In Vercel, **Import Project** and select the repo.
-3. Add the same environment variables from `.env.local` in **Project Settings → Environment Variables** (Production + Preview). Do **not** expose `SUPABASE_SERVICE_ROLE_KEY` as a `NEXT_PUBLIC_*` variable.
+3. Add the environment variables from `.env.local` in **Project Settings → Environment Variables** (Production + Preview):
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (never expose this last one as a `NEXT_PUBLIC_*` variable), and optionally `ANTHROPIC_API_KEY`.
+   - **`NEXT_PUBLIC_SITE_URL` — required for Production.** Set it to your production URL, e.g. `NEXT_PUBLIC_SITE_URL=https://edutrack.vercel.app`. Without this, `POST /api/volunteers` (inviting a volunteer) will return a clear `500` error rather than silently sending an invite email that points at localhost or an unintended host. If you also want to invite volunteers from Preview deployments, set it there too (pointed at whichever URL you want those invite links to use).
 4. In Supabase, go to **Authentication → URL Configuration** and set:
-   - **Site URL**: your Vercel production URL (e.g. `https://edutrack.vercel.app`)
-   - **Redirect URLs**: add `https://edutrack.vercel.app/api/auth/callback` (and the same for any preview URLs you use)
+   - **Site URL**: the same value as `NEXT_PUBLIC_SITE_URL` above (e.g. `https://edutrack.vercel.app`)
+   - **Redirect URLs**: add `https://edutrack.vercel.app/api/auth/callback` (and the same for any other URL you set `NEXT_PUBLIC_SITE_URL` to, e.g. a Preview URL)
 5. Deploy. Vercel will run `next build` automatically.
 6. Run `supabase/schema.sql` against your production Supabase project if you haven't already (it's the same script — safe to run once per project).
 

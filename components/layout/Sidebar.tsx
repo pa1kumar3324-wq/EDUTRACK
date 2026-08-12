@@ -2,34 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  GraduationCap,
-  LayoutDashboard,
-  Users,
-  UserCog,
-  Map,
-  BarChart3,
-  FileDown,
-  Bell,
-  CalendarCheck,
-} from "lucide-react";
+import { GraduationCap, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getNavForRole } from "@/lib/navigation";
 import type { AuthUser } from "@/lib/types";
-
-const volunteerNav = [{ href: "/dashboard", label: "Your Students", icon: LayoutDashboard }];
-
-const adminNav = [
-  { href: "/admin", label: "Analytics", icon: BarChart3 },
-  { href: "/admin/students", label: "Students", icon: Users },
-  { href: "/admin/volunteers", label: "Volunteers", icon: UserCog },
-  { href: "/admin/attendance", label: "Attendance", icon: CalendarCheck },
-  { href: "/admin/roadmap", label: "Roadmap", icon: Map },
-  { href: "/admin/reports", label: "Reports & Alerts", icon: FileDown },
-];
 
 export function Sidebar({ user }: { user: AuthUser }) {
   const pathname = usePathname();
-  const items = user.role === "admin" ? adminNav : volunteerNav;
+  const items = getNavForRole(user.role);
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card/40 md:flex">
