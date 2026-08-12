@@ -128,7 +128,15 @@ npm run format
 
 ## Adding volunteers after seeding
 
-Admins invite volunteers from **Admin → Volunteers → Invite volunteer**. This calls Supabase Auth's `inviteUserByEmail`, which sends a magic-link email; the volunteer sets their password on first login. A database trigger (`handle_new_auth_user`) automatically creates their `volunteers` profile row on signup.
+Admins invite volunteers from **Admin → Volunteers → Invite volunteer**. This calls Supabase Auth's `inviteUserByEmail`, which sends an invitation email. Clicking the link in that email:
+
+1. Verifies the invite with Supabase and signs the browser in (handled by `app/api/auth/callback/route.ts` — see note below).
+2. Redirects to `/set-password`, where the volunteer chooses their password (`supabase.auth.updateUser({ password })`). No password is ever stored in the app's own database.
+3. Redirects to their dashboard. From then on they sign in normally via `/login` with `signInWithPassword`.
+
+A database trigger (`handle_new_auth_user`) automatically creates their `volunteers` profile row on signup.
+
+**Note on the callback route:** Supabase's invite emails authenticate via `?token_hash=...&type=invite` (verified with `supabase.auth.verifyOtp()`), which is a different contract from the `?code=...` PKCE flow used elsewhere. `app/api/auth/callback/route.ts` handles both shapes for exactly this reason — if it only handled `?code=`, invited volunteers would fall through to `/login` with no session and no password to enter. No extra Supabase Redirect URL configuration is needed for this — it's the same `/api/auth/callback` URL already listed below, just parsed correctly on arrival.
 
 ---
 
@@ -185,6 +193,14 @@ This is enforced in two layers: Postgres Row Level Security policies (the source
 After every progress submission, `lib/utils/suggestionEngine.ts` generates a one-line suggestion for the next volunteer. It works in two modes:
 - **With `ANTHROPIC_API_KEY` set**: calls the Anthropic API for a suggestion tailored to what was taught, how it went, and the next roadmap topic.
 - **Without it**: falls back to a deterministic, rule-based sentence built from the roadmap engine's recommendation — so the feature always works, even with zero external dependencies.
+
+---
+
+## Verifying the invite / set-password fix
+
+`app/api/auth/callback/route.ts` was updated to handle Supabase's invite verification contract (`token_hash` + `type=invite`) in addition to the PKCE `code` flow it already handled. This was verified by static code review against the `@supabase/supabase-js` v2 API (`verifyOtp({ token_hash, type })`) and by tracing the full request path (`POST /api/volunteers` → `inviteUserByEmail` → email link → `/api/auth/callback` → `/set-password` → `updateUser`) against each file involved.
+
+What this fix could **not** be tested against directly: an actual Supabase project sending a real invitation email and a real click-through, since that requires live Supabase project credentials and email delivery that aren't available in this environment. If you hit any issue after deploying, the most likely place to look is the exact query string Supabase's invite email links to (visible by hovering the link in the received email) — it should be `.../api/auth/callback?token_hash=...&type=invite&next=%2Fset-password`.
 
 ---
 

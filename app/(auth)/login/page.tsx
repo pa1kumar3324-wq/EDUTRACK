@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { GraduationCap, Loader2 } from "lucide-react";
@@ -17,6 +17,22 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Surfaces errors forwarded here from /api/auth/callback — e.g. an
+  // invitation link that has already expired or was already used.
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "invite_expired") {
+      toast.error("Your invite link has expired", {
+        description: "Ask an admin to resend your invite from the Volunteers panel.",
+      });
+    } else if (error === "auth_callback_failed") {
+      toast.error("That link didn't work", {
+        description: "It may be invalid or already used. Ask an admin to resend it if needed.",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
