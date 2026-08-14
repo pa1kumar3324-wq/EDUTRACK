@@ -66,7 +66,7 @@ scripts/
 **Where the "continuity" logic lives:**
 - `supabase/schema.sql` — the `students_needing_revision` view flags a student if their last two logged statuses in a subject were both 🔴, or if there's been no update in 14+ days. The `latest_progress` view resolves each student's most recent session in one query.
 - `lib/utils/roadmapEngine.ts` — given a student's roadmap and history, decides whether to recommend revising the last topic (if it went badly) or the next topic in sequence.
-- `lib/utils/suggestionEngine.ts` — turns that into the human-readable "Suggested Next Lesson" text, optionally calling the Anthropic API for a richer, personalized suggestion if `ANTHROPIC_API_KEY` is set (falls back to a rule-based sentence if not).
+- `lib/utils/suggestionEngine.ts` — turns that into the human-readable "Suggested Next Lesson" text, optionally calling the Gemini API for a richer, personalized suggestion if `GEMINI_API_KEY` is set (falls back to a rule-based sentence if not).
 
 ---
 
@@ -97,7 +97,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # only used server-side, by scripts/seed.ts and the invite API route
 NEXT_PUBLIC_SITE_URL=http://localhost:3000         # canonical URL of this deployment — see below
-ANTHROPIC_API_KEY=                                 # optional — enables richer AI-generated lesson suggestions
+GEMINI_API_KEY=                                    # optional — enables richer AI-generated lesson suggestions
 ```
 `SUPABASE_SERVICE_ROLE_KEY` must **never** be exposed to the client — it's only read in `scripts/seed.ts` and in the `/api/volunteers` invite route, both of which run server-side.
 
@@ -145,7 +145,7 @@ A database trigger (`handle_new_auth_user`) automatically creates their `volunte
 1. Push this repository to GitHub/GitLab/Bitbucket.
 2. In Vercel, **Import Project** and select the repo.
 3. Add the environment variables from `.env.local` in **Project Settings → Environment Variables** (Production + Preview):
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (never expose this last one as a `NEXT_PUBLIC_*` variable), and optionally `ANTHROPIC_API_KEY`.
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (never expose this last one as a `NEXT_PUBLIC_*` variable), and optionally `GEMINI_API_KEY`.
    - **`NEXT_PUBLIC_SITE_URL` — required for Production.** Set it to your production URL, e.g. `NEXT_PUBLIC_SITE_URL=https://edutrack.vercel.app`. Without this, `POST /api/volunteers` (inviting a volunteer) will return a clear `500` error rather than silently sending an invite email that points at localhost or an unintended host. If you also want to invite volunteers from Preview deployments, set it there too (pointed at whichever URL you want those invite links to use).
 4. In Supabase, go to **Authentication → URL Configuration** and set:
    - **Site URL**: the same value as `NEXT_PUBLIC_SITE_URL` above (e.g. `https://edutrack.vercel.app`)
@@ -191,7 +191,7 @@ This is enforced in two layers: Postgres Row Level Security policies (the source
 ## Notes on the AI "Suggested Next Lesson" feature
 
 After every progress submission, `lib/utils/suggestionEngine.ts` generates a one-line suggestion for the next volunteer. It works in two modes:
-- **With `ANTHROPIC_API_KEY` set**: calls the Anthropic API for a suggestion tailored to what was taught, how it went, and the next roadmap topic.
+- **With `GEMINI_API_KEY` set**: calls the Gemini API (`gemini-3.6-flash`) for a suggestion tailored to what was taught, how it went, and the next roadmap topic.
 - **Without it**: falls back to a deterministic, rule-based sentence built from the roadmap engine's recommendation — so the feature always works, even with zero external dependencies.
 
 ---

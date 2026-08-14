@@ -98,8 +98,10 @@ create table progress (
   volunteer_id          uuid not null references volunteers (id) on delete restrict,
   english_topic         text,
   english_status        understanding_status,
+  english_roadmap_id    uuid references learning_roadmap (id) on delete set null,
   math_topic            text,
   math_status           understanding_status,
+  math_roadmap_id       uuid references learning_roadmap (id) on delete set null,
   homework              text,
   notes                 text,
   suggested_next_lesson text,
@@ -110,6 +112,8 @@ create table progress (
 create index idx_progress_student on progress (student_id, created_at desc);
 create index idx_progress_volunteer on progress (volunteer_id, created_at desc);
 create index idx_progress_created on progress (created_at desc);
+create index idx_progress_english_roadmap on progress (english_roadmap_id);
+create index idx_progress_math_roadmap on progress (math_roadmap_id);
 
 -- Keep students.updated_at (and levels, indirectly, via the app layer) in sync
 -- whenever a new progress entry lands.

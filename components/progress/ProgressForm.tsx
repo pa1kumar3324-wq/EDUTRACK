@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { progressSchema, type ProgressFormValues } from "@/lib/validations/progress";
 import { useProgress } from "@/hooks/useProgress";
-import type { Student } from "@/lib/types/database";
+import type { LearningRoadmapEntry, Student, Subject } from "@/lib/types/database";
 
 const STATUS_OPTIONS = [
   { value: "independent", label: "🟢 Independent" },
@@ -22,11 +22,12 @@ const STATUS_OPTIONS = [
   { value: "not_understood", label: "🔴 Didn't Understand" },
 ];
 
-export function ProgressForm({ student }: { student: Student }) {
+export function ProgressForm({ student, roadmap }: { student: Student; roadmap: LearningRoadmapEntry[] }) {
   const router = useRouter();
   const { submitProgress, isSubmitting } = useProgress();
   const [showSuccess, setShowSuccess] = useState(false);
-  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [mathSuggestion, setMathSuggestion] = useState<string | null>(null);
+  const [englishSuggestion, setEnglishSuggestion] = useState<string | null>(null);
 
   const {
     register,
@@ -38,9 +39,32 @@ export function ProgressForm({ student }: { student: Student }) {
     defaultValues: { student_id: student.id },
   });
 
+  // Mirrors RoadmapPositionControl's grade+subject-filtered, order_index-sorted
+  // dropdown pattern, so volunteers pick the exact roadmap topic instead of
+  // free-typing it (the root cause of advancement silently resetting to
+  // topic #1 on any typo/phrasing mismatch).
+  const topicsBySubject: Record<Subject, LearningRoadmapEntry[]> = useMemo(() => {
+    const bySubject = (subject: Subject) =>
+      roadmap.filter((r) => r.subject === subject).sort((a, b) => a.order_index - b.order_index);
+    return { english: bySubject("english"), math: bySubject("math") };
+  }, [roadmap]);
+
+  function handleTopicSelect(subject: Subject, roadmapId: string) {
+    const entry = topicsBySubject[subject].find((t) => t.id === roadmapId);
+    if (!entry) return;
+    if (subject === "english") {
+      setValue("english_topic", entry.topic);
+      setValue("english_roadmap_id", entry.id);
+    } else {
+      setValue("math_topic", entry.topic);
+      setValue("math_roadmap_id", entry.id);
+    }
+  }
+
   async function onSubmit(values: ProgressFormValues) {
     const result = await submitProgress(values);
-    setSuggestion(result.suggestedNextLesson ?? null);
+    setMathSuggestion(result.mathSuggestion ?? null);
+    setEnglishSuggestion(result.englishSuggestion ?? null);
     setShowSuccess(true);
     setTimeout(() => {
       router.push(`/students/${student.id}`);
@@ -68,10 +92,24 @@ export function ProgressForm({ student }: { student: Student }) {
             {student.name}'s timeline has been updated. Next volunteer will see this immediately.
           </p>
         </div>
-        {suggestion && (
-          <div className="mt-2 max-w-md rounded-xl bg-card px-4 py-3 text-left text-sm shadow-soft">
-            <p className="text-xs font-medium uppercase tracking-wide text-primary">Suggested Next Lesson</p>
-            <p className="mt-1 text-foreground">{suggestion}</p>
+        {(mathSuggestion || englishSuggestion) && (
+          <div className="mt-2 flex w-full max-w-md flex-col gap-2">
+            {mathSuggestion && (
+              <div className="rounded-xl bg-card px-4 py-3 text-left text-sm shadow-soft">
+                <p className="text-xs font-medium uppercase tracking-wide text-primary">
+                  {englishSuggestion ? "Math — Suggested Next Lesson" : "Suggested Next Lesson"}
+                </p>
+                <p className="mt-1 text-foreground">{mathSuggestion}</p>
+              </div>
+            )}
+            {englishSuggestion && (
+              <div className="rounded-xl bg-card px-4 py-3 text-left text-sm shadow-soft">
+                <p className="text-xs font-medium uppercase tracking-wide text-primary">
+                  {mathSuggestion ? "English — Suggested Next Lesson" : "Suggested Next Lesson"}
+                </p>
+                <p className="mt-1 text-foreground">{englishSuggestion}</p>
+              </div>
+            )}
           </div>
         )}
       </motion.div>
@@ -89,7 +127,27 @@ export function ProgressForm({ student }: { student: Student }) {
           <CardContent className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="english_topic">English taught</Label>
-              <Input id="english_topic" placeholder="e.g. Equivalent fractions" {...register("english_topic")} />
+              {topicsBySubject.english.length > 0 ? (
+                <Select onValueChange={(v) => handleTopicSelect("english", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select topic from roadmap" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {topicsBySubject.english.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.topic}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <>
+                  <Input id="english_topic" placeholder="e.g. Equivalent fractions" {...register("english_topic")} />
+                  <p className="text-xs text-muted-foreground">
+                    No roadmap defined yet for Grade {student.grade} English — logging as free text.
+                  </p>
+                </>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Understanding</Label>
@@ -117,7 +175,27 @@ export function ProgressForm({ student }: { student: Student }) {
           <CardContent className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="math_topic">Math taught</Label>
-              <Input id="math_topic" placeholder="e.g. Long division" {...register("math_topic")} />
+              {topicsBySubject.math.length > 0 ? (
+                <Select onValueChange={(v) => handleTopicSelect("math", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select topic from roadmap" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {topicsBySubject.math.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.topic}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <>
+                  <Input id="math_topic" placeholder="e.g. Long division" {...register("math_topic")} />
+                  <p className="text-xs text-muted-foreground">
+                    No roadmap defined yet for Grade {student.grade} Math — logging as free text.
+                  </p>
+                </>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Understanding</Label>

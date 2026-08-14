@@ -17,7 +17,6 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
 
   // Surfaces errors forwarded here from /api/auth/callback — e.g. an
   // invitation link that has already expired or was already used.
@@ -39,25 +38,6 @@ function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
     const supabase = createClient();
-
-    if (isForgotPassword) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=/set-password`,
-      });
-
-      setIsLoading(false);
-
-      if (error) {
-        toast.error("Couldn't send reset email", { description: error.message });
-        return;
-      }
-
-      toast.success("Reset email sent", {
-        description: "Check your inbox for the password reset link.",
-      });
-      return;
-    }
-
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
@@ -110,12 +90,8 @@ function LoginForm() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{isForgotPassword ? "Reset password" : "Sign in"}</CardTitle>
-            <CardDescription>
-              {isForgotPassword
-                ? "Enter your email and we'll send you a password reset link."
-                : "Use the email your admin registered for you."}
-            </CardDescription>
+            <CardTitle>Sign in</CardTitle>
+            <CardDescription>Use the email your admin registered for you.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -131,54 +107,29 @@ function LoginForm() {
                   autoComplete="email"
                 />
               </div>
-
-              {!isForgotPassword && (
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <button
-                      type="button"
-                      onClick={() => setIsForgotPassword(true)}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                  />
-                </div>
-              )}
-
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
               <Button type="submit" disabled={isLoading} className="mt-1">
                 {isLoading && <Loader2 className="animate-spin" />}
-                {isForgotPassword ? "Send reset link" : "Sign in"}
+                Sign in
               </Button>
-
-              {isForgotPassword && (
-                <button
-                  type="button"
-                  onClick={() => setIsForgotPassword(false)}
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Back to sign in
-                </button>
-              )}
             </form>
           </CardContent>
         </Card>
 
-        {!isForgotPassword && (
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            First time? Ask an admin to invite you from the Volunteers panel.
-          </p>
-        )}
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          First time? Ask an admin to invite you from the Volunteers panel.
+        </p>
       </motion.div>
     </div>
   );

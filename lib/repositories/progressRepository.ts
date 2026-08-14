@@ -43,15 +43,22 @@ export const progressRepository = {
 
   async create(
     supabase: Client,
-    values: ProgressFormValues & { volunteer_id: string; suggested_next_lesson?: string }
+    values: ProgressFormValues & {
+      volunteer_id: string;
+      suggested_next_lesson?: string;
+      english_roadmap_id?: string | null;
+      math_roadmap_id?: string | null;
+    }
   ) {
     const payload: Database["public"]["Tables"]["progress"]["Insert"] = {
       student_id: values.student_id,
       volunteer_id: values.volunteer_id,
       english_topic: values.english_topic || null,
       english_status: values.english_status || null,
+      english_roadmap_id: values.english_roadmap_id ?? null,
       math_topic: values.math_topic || null,
       math_status: values.math_status || null,
+      math_roadmap_id: values.math_roadmap_id ?? null,
       homework: values.homework || null,
       notes: values.notes || null,
       suggested_next_lesson: values.suggested_next_lesson || null,

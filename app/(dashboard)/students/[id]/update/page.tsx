@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { studentRepository } from "@/lib/repositories/studentRepository";
+import { roadmapRepository } from "@/lib/repositories/roadmapRepository";
 import { ProgressForm } from "@/components/progress/ProgressForm";
 import { Button } from "@/components/ui/button";
 import type { Student } from "@/lib/types/database";
@@ -48,6 +49,8 @@ export default async function UpdateProgressPage({
     }
   }
 
+  const roadmap = await roadmapRepository.listByGrade(supabase, student.grade);
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div>
@@ -73,7 +76,7 @@ export default async function UpdateProgressPage({
         </p>
       </div>
 
-      <ProgressForm student={student} />
+      <ProgressForm student={student} roadmap={roadmap} />
     </div>
   );
 }

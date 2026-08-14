@@ -63,6 +63,7 @@ export function recommendNextTopic(
 
   const lastTopic = subject === "english" ? lastEntry.english_topic : lastEntry.math_topic;
   const lastStatus = subject === "english" ? lastEntry.english_status : lastEntry.math_status;
+  const lastRoadmapId = subject === "english" ? lastEntry.english_roadmap_id : lastEntry.math_roadmap_id;
 
   if (lastStatus === "not_understood" || lastStatus === "needs_help") {
     return {
@@ -77,9 +78,19 @@ export function recommendNextTopic(
     };
   }
 
-  const currentIndex = subjectRoadmap.findIndex(
-    (r) => r.topic.toLowerCase() === (lastTopic ?? "").toLowerCase()
-  );
+  // Prefer an exact roadmap_id match — set on every entry logged via the
+  // roadmap-backed Select — over case-insensitive string matching. Only
+  // rows predating the *_roadmap_id columns (or logged as free text because
+  // no roadmap existed yet) fall back to the string match, exactly as
+  // before.
+  let currentIndex = lastRoadmapId
+    ? subjectRoadmap.findIndex((r) => r.id === lastRoadmapId)
+    : -1;
+  if (currentIndex === -1) {
+    currentIndex = subjectRoadmap.findIndex(
+      (r) => r.topic.toLowerCase() === (lastTopic ?? "").toLowerCase()
+    );
+  }
 
   const next = currentIndex >= 0 ? subjectRoadmap[currentIndex + 1] : subjectRoadmap[0];
 
@@ -98,6 +109,65 @@ export function recommendNextTopic(
     topic: next.topic,
     reason: `Student is independent on "${lastTopic}" — ready to advance.`,
     isRevision: false,
+  };
+}
+
+export type TopicValidationResult =
+  | { roadmapEntryId: string | null; error?: undefined }
+  | { error: string; roadmapEntryId?: undefined };
+
+/**
+ * Server-side gate for a single subject's submitted topic on a progress
+ * entry (used by POST /api/progress). Mirrors the same fallback rule as the
+ * form: if no roadmap exists yet for this grade/subject, free text is
+ * allowed through untouched. If a roadmap DOES exist, the submitted topic
+ * must exactly match (case-insensitive) one of that roadmap's topics, or
+ * the entry is rejected — this is what makes the old silent
+ * fall-back-to-topic-zero failure mode impossible going forward.
+ *
+ * When valid, returns the roadmap row id to store on the progress entry:
+ *  - Prefers the client-supplied `roadmapId` (the row the volunteer
+ *    actually picked in the Select) when it belongs to this grade/subject's
+ *    roadmap and its topic text agrees with the submitted topic — this
+ *    disambiguates the rare case of two roadmap rows sharing topic text.
+ *  - Otherwise derives it from the case-insensitive text match, so raw API
+ *    submissions (no roadmapId) that still name a real roadmap topic are
+ *    accepted and correctly linked, not just validated.
+ */
+export function validateTopicAgainstRoadmap(
+  subject: Subject,
+  grade: number,
+  topic: string | null | undefined,
+  roadmapId: string | null | undefined,
+  roadmap: LearningRoadmapEntry[]
+): TopicValidationResult {
+  const subjectRoadmap = roadmap.filter((r) => r.subject === subject);
+
+  // No roadmap defined yet for this grade/subject — free text is allowed,
+  // mirroring ProgressForm's fallback UI.
+  if (subjectRoadmap.length === 0) {
+    return { roadmapEntryId: null };
+  }
+
+  const trimmed = topic?.trim();
+  if (!trimmed) {
+    // Subject wasn't logged this session — nothing to validate.
+    return { roadmapEntryId: null };
+  }
+
+  const byId = roadmapId ? subjectRoadmap.find((r) => r.id === roadmapId) : undefined;
+  if (byId && byId.topic.toLowerCase() === trimmed.toLowerCase()) {
+    return { roadmapEntryId: byId.id };
+  }
+
+  const byText = subjectRoadmap.find((r) => r.topic.toLowerCase() === trimmed.toLowerCase());
+  if (byText) {
+    return { roadmapEntryId: byText.id };
+  }
+
+  const subjectLabel = subject === "english" ? "English" : "Math";
+  return {
+    error: `"${trimmed}" doesn't match any Grade ${grade} ${subjectLabel} roadmap topic. Please choose a topic from the roadmap.`,
   };
 }
 

@@ -54,7 +54,11 @@ export function ProgressTimeline({ history }: { history: HistoryRow[] }) {
             {entry.suggested_next_lesson && (
               <div className="mt-3 rounded-xl bg-primary/5 px-3 py-2 text-sm">
                 <span className="font-medium text-primary">Suggested next lesson: </span>
-                <span className="text-foreground">{entry.suggested_next_lesson}</span>
+                {/* When both subjects were recorded, suggested_next_lesson is the
+                    "Math: ...\n\nEnglish: ..." combined string (see
+                    app/api/progress/route.ts) — whitespace-pre-line keeps that
+                    readable instead of collapsing the blank line. */}
+                <span className="whitespace-pre-line text-foreground">{entry.suggested_next_lesson}</span>
               </div>
             )}
           </li>

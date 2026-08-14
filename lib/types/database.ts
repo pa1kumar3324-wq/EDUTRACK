@@ -69,8 +69,12 @@ export type Progress = {
   volunteer_id: string;
   english_topic: string | null;
   english_status: UnderstandingStatus | null;
+  /** learning_roadmap row this entry's english_topic was logged against, when known. Null for rows predating this column, or when no roadmap exists for the grade/subject. */
+  english_roadmap_id: string | null;
   math_topic: string | null;
   math_status: UnderstandingStatus | null;
+  /** learning_roadmap row this entry's math_topic was logged against, when known. Null for rows predating this column, or when no roadmap exists for the grade/subject. */
+  math_roadmap_id: string | null;
   homework: string | null;
   notes: string | null;
   suggested_next_lesson: string | null;
