@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
  * without this allow-list, `?next=https://evil.example` or `?next=//evil.example`
  * (a protocol-relative URL) would be an open redirect.
  */
-const ALLOWED_NEXT_PATHS = new Set(["/set-password", "/dashboard", "/login"]);
+const ALLOWED_NEXT_PATHS = new Set(["/set-password", "/reset-password", "/dashboard", "/login"]);
 
 function safeNextPath(next: string | null): string {
   if (next && ALLOWED_NEXT_PATHS.has(next)) return next;
