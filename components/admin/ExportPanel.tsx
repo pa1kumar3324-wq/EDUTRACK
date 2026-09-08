@@ -98,7 +98,7 @@ export function ExportPanel() {
         }
 
         const { default: jsPDF } = await import("jspdf");
-        await import("jspdf-autotable");
+        const { default: autoTable } = await import("jspdf-autotable");
         const doc = new jsPDF({ orientation: "landscape" });
         doc.setFontSize(14);
         const typeLabel = type === "students" ? "Students" : type === "attendance" ? "Attendance" : "Progress";
@@ -109,8 +109,15 @@ export function ExportPanel() {
         }
         const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
         const body2 = rows.map((r: Record<string, unknown>) => columns.map((c) => String(r[c] ?? "")));
-        // @ts-expect-error — jspdf-autotable augments jsPDF's prototype at import time
-        doc.autoTable({ head: [columns], body: body2, startY: isAttendance ? 27 : 22, styles: { fontSize: 8 } });
+        // jspdf-autotable v5+ exports a standalone function rather than a jsPDF.prototype method.
+        autoTable(doc, {
+          head: [columns],
+          body: body2,
+          startY: isAttendance ? 27 : 22,
+          styles: { fontSize: 8, textColor: [26, 20, 13] },
+          headStyles: { fillColor: [23, 87, 61] },
+          alternateRowStyles: { fillColor: [247, 242, 233] },
+        });
         doc.save(`edutrack-${type}${suffix}.pdf`);
       } else {
         const result = await downloadBlob(`/api/export?${buildQuery(format)}`, `edutrack-${type}${suffix}.${format}`);

@@ -118,14 +118,14 @@ export async function generateAiSuggestion(input: SuggestionInput): Promise<stri
 
   try {
     const response = await ai.models.generateContent({
-      // gemini-3.6-flash is the current GA stable Flash model (as of the
-      // Gemini 3.x line) — see https://ai.google.dev/gemini-api/docs/generate-content/latest-model.
-      // Google retires model IDs on a rolling basis (2.5 Flash was cut off
-      // for new API keys ahead of its official shutdown date); if this
-      // starts 404ing again, check that page for the current GA Flash ID
-      // and update the string below — everything else in this file stays
-      // the same.
-      model: "gemini-3.6-flash",
+      // gemini-3.8-flash is the current GA stable Flash model as of Sept 2026
+      // (released 2026-09-02, superseding 3.7 and 3.6 Flash) — see
+      // https://ai.google.dev/gemini-api/docs/latest-model. Google retires
+      // model IDs on a rolling basis (2.0 Flash/Flash-Lite were shut down
+      // 2026-06-01); if this starts 404ing again, check that page for the
+      // current GA Flash ID and update the string below — everything else
+      // in this file stays the same.
+      model: "gemini-3.8-flash",
       contents: buildPrompt(input),
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,

@@ -1,0 +1,13 @@
+{
+  "name": "EduTrack",
+  "short_name": "EduTrack",
+  "description": "Continuity tracking for NGO tutoring programs.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f7f2e9",
+  "theme_color": "#1c5b40",
+  "icons": [
+    { "src": "/icon", "sizes": "32x32", "type": "image/png" },
+    { "src": "/apple-icon", "sizes": "180x180", "type": "image/png" }
+  ]
+}

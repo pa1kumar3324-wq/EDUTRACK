@@ -11,16 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StatusPicker } from "@/components/shared/StatusPicker";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { progressSchema, type ProgressFormValues } from "@/lib/validations/progress";
 import { useProgress } from "@/hooks/useProgress";
 import type { LearningRoadmapEntry, Student, Subject } from "@/lib/types/database";
-
-const STATUS_OPTIONS = [
-  { value: "independent", label: "🟢 Independent" },
-  { value: "needs_help", label: "🟡 Needs Help" },
-  { value: "not_understood", label: "🔴 Didn't Understand" },
-];
 
 export function ProgressForm({ student, roadmap }: { student: Student; roadmap: LearningRoadmapEntry[] }) {
   const router = useRouter();
@@ -33,6 +28,7 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ProgressFormValues>({
     resolver: zodResolver(progressSchema),
@@ -150,19 +146,13 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Understanding</Label>
-              <Select onValueChange={(v) => setValue("english_status", v as ProgressFormValues["english_status"])}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select understanding level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label id="english-status-label">Understanding</Label>
+              <StatusPicker
+                id="english-status"
+                label="English understanding"
+                value={watch("english_status")}
+                onChange={(v) => setValue("english_status", v as ProgressFormValues["english_status"])}
+              />
             </div>
           </CardContent>
         </Card>
@@ -198,19 +188,13 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Understanding</Label>
-              <Select onValueChange={(v) => setValue("math_status", v as ProgressFormValues["math_status"])}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select understanding level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label id="math-status-label">Understanding</Label>
+              <StatusPicker
+                id="math-status"
+                label="Math understanding"
+                value={watch("math_status")}
+                onChange={(v) => setValue("math_status", v as ProgressFormValues["math_status"])}
+              />
             </div>
           </CardContent>
         </Card>

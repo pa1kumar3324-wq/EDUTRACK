@@ -11,6 +11,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { StudentCardSkeleton } from "@/components/shared/LoadingSkeleton";
 import { StudentFormDialog } from "@/components/admin/StudentFormDialog";
 import { AssignVolunteersDialog } from "@/components/admin/AssignVolunteersDialog";
@@ -44,6 +45,7 @@ export function StudentsTable({ volunteers }: { volunteers: Volunteer[] }) {
   const [assignOpen, setAssignOpen] = useState(false);
   const [assigningStudent, setAssigningStudent] = useState<Student | null>(null);
   const [assignedIds, setAssignedIds] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
 
   async function openAssign(student: Student) {
     setAssigningStudent(student);
@@ -58,13 +60,13 @@ export function StudentsTable({ volunteers }: { volunteers: Volunteer[] }) {
   }
 
   async function handleDelete(student: Student) {
-    if (!confirm(`Remove ${student.name}? Their progress history is preserved.`)) return;
     const res = await fetch(`/api/students/${student.id}`, { method: "DELETE" });
     if (res.ok) {
       toast.success("Student removed");
       refetch();
     } else {
       toast.error("Failed to remove student");
+      throw new Error("Failed to remove student");
     }
   }
 
@@ -114,63 +116,112 @@ export function StudentsTable({ volunteers }: { volunteers: Volunteer[] }) {
       ) : students.length === 0 ? (
         <EmptyState icon={Users} title="No students found" description="Try adjusting your search or filters, or add a new student." />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Student</TableHead>
-              <TableHead>Grade</TableHead>
-              <TableHead>English</TableHead>
-              <TableHead>Math</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          {/* Mobile: card list — most volunteers use EduTrack on a phone */}
+          <div className="flex flex-col gap-3 md:hidden">
             {students.map((student) => (
-              <TableRow key={student.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={student.photo_url ?? undefined} alt={student.name} />
-                      <AvatarFallback className="text-xs">{initials(student.name)}</AvatarFallback>
-                    </Avatar>
-                    <Link href={`/students/${student.id}`} className="font-medium hover:underline">
-                      {student.name}
-                    </Link>
-                  </div>
-                </TableCell>
-                <TableCell>Grade {student.grade}</TableCell>
-                <TableCell className="capitalize">{LEVEL_LABELS[student.english_level]}</TableCell>
-                <TableCell className="capitalize">{LEVEL_LABELS[student.math_level]}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/students/${student.id}`}><Eye className="h-4 w-4" /> View profile</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openAssign(student)}>
-                        <UserPlus className="h-4 w-4" /> Assign volunteers
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setEditingStudent(student);
-                          setFormOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(student)} className="text-destructive focus:text-destructive">
-                        <Trash2 className="h-4 w-4" /> Remove
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
+              <div key={student.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 shadow-soft">
+                <Avatar className="h-11 w-11 shrink-0">
+                  <AvatarImage src={student.photo_url ?? undefined} alt={student.name} />
+                  <AvatarFallback>{initials(student.name)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <Link href={`/students/${student.id}`} className="block truncate font-display font-semibold hover:underline">
+                    {student.name}
+                  </Link>
+                  <p className="truncate text-xs text-muted-foreground">
+                    Grade {student.grade} · Eng: {LEVEL_LABELS[student.english_level]} · Math: {LEVEL_LABELS[student.math_level]}
+                  </p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label={`Actions for ${student.name}`}>
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/students/${student.id}`}><Eye className="h-4 w-4" /> View profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openAssign(student)}>
+                      <UserPlus className="h-4 w-4" /> Assign volunteers
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setEditingStudent(student);
+                        setFormOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDeleteTarget(student)} className="text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4" /> Remove
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+
+          {/* Desktop / tablet: full table */}
+          <Table className="hidden md:table">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Student</TableHead>
+                <TableHead>Grade</TableHead>
+                <TableHead>English</TableHead>
+                <TableHead>Math</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {students.map((student) => (
+                <TableRow key={student.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={student.photo_url ?? undefined} alt={student.name} />
+                        <AvatarFallback className="text-xs">{initials(student.name)}</AvatarFallback>
+                      </Avatar>
+                      <Link href={`/students/${student.id}`} className="font-medium hover:underline">
+                        {student.name}
+                      </Link>
+                    </div>
+                  </TableCell>
+                  <TableCell>Grade {student.grade}</TableCell>
+                  <TableCell className="capitalize">{LEVEL_LABELS[student.english_level]}</TableCell>
+                  <TableCell className="capitalize">{LEVEL_LABELS[student.math_level]}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/students/${student.id}`}><Eye className="h-4 w-4" /> View profile</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openAssign(student)}>
+                          <UserPlus className="h-4 w-4" /> Assign volunteers
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditingStudent(student);
+                            setFormOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setDeleteTarget(student)} className="text-destructive focus:text-destructive">
+                          <Trash2 className="h-4 w-4" /> Remove
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </>
       )}
 
       <StudentFormDialog open={formOpen} onOpenChange={setFormOpen} student={editingStudent} onSaved={refetch} />
@@ -181,6 +232,16 @@ export function StudentsTable({ volunteers }: { volunteers: Volunteer[] }) {
         allVolunteers={volunteers}
         currentlyAssignedIds={assignedIds}
         onSaved={refetch}
+      />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Remove this student?"
+        description={deleteTarget ? `Remove ${deleteTarget.name}? Their progress history is preserved.` : ""}
+        confirmLabel="Remove student"
+        onConfirm={() => {
+          if (deleteTarget) return handleDelete(deleteTarget);
+        }}
       />
     </div>
   );

@@ -2,79 +2,133 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Self-hosted fonts (no external fetch at build time — see @fontsource imports in layout.tsx) */
+
 @layer base {
   :root {
-    --background: 220 25% 98%;
-    --foreground: 222 30% 12%;
+    /* ---- Sprout: a warm, growth-oriented identity ----
+       Forest green (primary / "growth") + terracotta (accent / warmth) on warm paper. */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 30% 12%;
+    --background: 40 38% 97%;
+    --foreground: 26 28% 13%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 30% 12%;
+    --card: 40 32% 99%;
+    --card-foreground: 26 28% 13%;
 
-    --primary: 245 58% 51%;
-    --primary-foreground: 0 0% 100%;
+    --popover: 40 32% 99%;
+    --popover-foreground: 26 28% 13%;
 
-    --secondary: 220 20% 95%;
-    --secondary-foreground: 222 25% 20%;
+    --primary: 158 55% 30%;
+    --primary-foreground: 40 38% 98%;
 
-    --muted: 220 20% 95%;
-    --muted-foreground: 220 10% 46%;
+    --secondary: 40 22% 92%;
+    --secondary-foreground: 27 22% 22%;
 
-    --accent: 245 58% 51%;
-    --accent-foreground: 0 0% 100%;
+    --muted: 38 20% 92%;
+    --muted-foreground: 30 10% 42%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --accent: 20 68% 48%;
+    --accent-foreground: 40 38% 98%;
 
-    --success: 152 60% 36%;
-    --success-foreground: 0 0% 100%;
+    --destructive: 6 62% 42%;
+    --destructive-foreground: 40 38% 98%;
 
-    --warning: 38 92% 45%;
-    --warning-foreground: 0 0% 100%;
+    --success: 158 55% 28%;
+    --success-foreground: 40 38% 98%;
 
-    --border: 220 18% 90%;
-    --input: 220 18% 88%;
-    --ring: 245 58% 51%;
+    --warning: 36 82% 40%;
+    --warning-foreground: 40 38% 98%;
 
-    --radius: 0.75rem;
+    --border: 36 20% 87%;
+    --input: 36 20% 85%;
+    --ring: 158 55% 30%;
+
+    --radius: 1rem;
+
+    /* Full 50–900 scales for the two anchor hues, for gradients, illustration & data viz */
+    --forest-50: 150 42% 95%;
+    --forest-100: 152 40% 89%;
+    --forest-200: 154 38% 79%;
+    --forest-300: 155 36% 65%;
+    --forest-400: 157 40% 50%;
+    --forest-500: 158 50% 38%;
+    --forest-600: 158 55% 30%;
+    --forest-700: 159 58% 23%;
+    --forest-800: 160 55% 17%;
+    --forest-900: 161 50% 11%;
+
+    --clay-50: 24 75% 96%;
+    --clay-100: 22 68% 90%;
+    --clay-200: 21 64% 81%;
+    --clay-300: 20 62% 69%;
+    --clay-400: 20 65% 58%;
+    --clay-500: 20 68% 48%;
+    --clay-600: 19 64% 40%;
+    --clay-700: 18 60% 32%;
+    --clay-800: 17 55% 24%;
+    --clay-900: 16 50% 16%;
+
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
   }
 
   .dark {
-    --background: 224 28% 7%;
-    --foreground: 220 20% 94%;
+    /* Genuinely separate dark palette: deep forest-ink, not an inverted light mode */
+    --background: 160 24% 6%;
+    --foreground: 40 28% 93%;
 
-    --card: 224 24% 10%;
-    --card-foreground: 220 20% 94%;
+    --card: 160 20% 9%;
+    --card-foreground: 40 28% 93%;
 
-    --popover: 224 24% 10%;
-    --popover-foreground: 220 20% 94%;
+    --popover: 160 22% 8%;
+    --popover-foreground: 40 28% 93%;
 
-    --primary: 245 75% 68%;
-    --primary-foreground: 224 28% 8%;
+    --primary: 152 48% 56%;
+    --primary-foreground: 160 30% 8%;
 
-    --secondary: 223 20% 15%;
-    --secondary-foreground: 220 20% 88%;
+    --secondary: 158 14% 15%;
+    --secondary-foreground: 40 20% 88%;
 
-    --muted: 223 20% 15%;
-    --muted-foreground: 220 10% 62%;
+    --muted: 158 14% 14%;
+    --muted-foreground: 40 10% 65%;
 
-    --accent: 245 75% 68%;
-    --accent-foreground: 224 28% 8%;
+    --accent: 22 72% 62%;
+    --accent-foreground: 20 40% 10%;
 
-    --destructive: 0 70% 62%;
-    --destructive-foreground: 224 28% 8%;
+    --destructive: 6 68% 62%;
+    --destructive-foreground: 6 40% 10%;
 
-    --success: 152 55% 48%;
-    --success-foreground: 224 28% 8%;
+    --success: 152 48% 56%;
+    --success-foreground: 160 30% 8%;
 
-    --warning: 38 92% 58%;
-    --warning-foreground: 224 28% 8%;
+    --warning: 38 85% 60%;
+    --warning-foreground: 30 40% 10%;
 
-    --border: 223 18% 18%;
-    --input: 223 18% 20%;
-    --ring: 245 75% 68%;
+    --border: 158 14% 18%;
+    --input: 158 14% 20%;
+    --ring: 152 48% 56%;
+
+    --forest-50: 161 50% 11%;
+    --forest-100: 160 55% 17%;
+    --forest-200: 159 58% 23%;
+    --forest-300: 158 55% 30%;
+    --forest-400: 158 50% 38%;
+    --forest-500: 157 40% 50%;
+    --forest-600: 155 36% 65%;
+    --forest-700: 154 38% 79%;
+    --forest-800: 152 40% 89%;
+    --forest-900: 150 42% 95%;
+
+    --clay-50: 16 50% 16%;
+    --clay-100: 17 55% 24%;
+    --clay-200: 18 60% 32%;
+    --clay-300: 19 64% 40%;
+    --clay-400: 20 68% 48%;
+    --clay-500: 20 65% 58%;
+    --clay-600: 20 62% 69%;
+    --clay-700: 21 64% 81%;
+    --clay-800: 22 68% 90%;
+    --clay-900: 24 75% 96%;
   }
 }
 
@@ -82,11 +136,33 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at 100% 0%, hsl(var(--forest-100) / 0.35), transparent 55%),
+      radial-gradient(circle at 0% 100%, hsl(var(--clay-100) / 0.25), transparent 45%);
+    background-attachment: fixed;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(circle at 100% 0%, hsl(var(--forest-100) / 0.12), transparent 55%),
+      radial-gradient(circle at 0% 100%, hsl(var(--clay-100) / 0.08), transparent 45%);
   }
   ::selection {
-    @apply bg-primary/25;
+    @apply bg-primary/20;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -100,5 +176,28 @@
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-border rounded-full;
+  }
+  /* Subtle paper grain used behind hero/empty-state panels */
+  .grain {
+    position: relative;
+    isolation: isolate;
+  }
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--secondary)) 37%,
+      hsl(var(--muted)) 63%
+    );
+    background-size: 400% 100%;
   }
 }

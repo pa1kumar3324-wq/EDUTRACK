@@ -6,9 +6,10 @@ import type {
   VolunteerActivityPoint,
   WeakTopicPoint,
   WeeklyProgressPoint,
+  WeekendCoverage,
 } from "@/lib/types";
 import type { Student } from "@/lib/types/database";
-import { startOfWeek, subWeeks, format, isToday, differenceInCalendarDays } from "date-fns";
+import { startOfWeek, subWeeks, format, isToday, isSaturday, previousSaturday, addDays, startOfDay, differenceInCalendarDays } from "date-fns";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -176,5 +177,56 @@ export const analyticsRepository = {
         return { id: v.id, name: v.name, daysSinceUpdate: daysSince };
       })
       .filter((v) => v.daysSinceUpdate >= days);
+  },
+
+  /**
+   * Weekend coverage: which active students got a progress update on a given
+   * weekend (Sat–Sun), and which didn't. This program only runs weekend
+   * sessions, so "coverage" for a weekend is the operational health metric —
+   * a volunteer no-show or a missed update shows up here immediately.
+   * `referenceSaturday` (ISO "YYYY-MM-DD") lets the admin page navigate
+   * prev/next; defaults to the most recent Saturday on/before today.
+   */
+  async weekendCoverage(supabase: Client, referenceSaturday?: string): Promise<WeekendCoverage> {
+    const today = new Date();
+    const base = referenceSaturday
+      ? new Date(`${referenceSaturday}T00:00:00`)
+      : isSaturday(today)
+        ? today
+        : previousSaturday(today);
+    const weekendStart = startOfDay(base);
+    const weekendEnd = addDays(weekendStart, 1);
+    const rangeEndExclusive = addDays(weekendEnd, 1);
+
+    const [{ data: students }, { data: progressRows }] = await Promise.all([
+      supabase.from("students").select("id, name, grade, photo_url").eq("is_active", true).order("name"),
+      supabase
+        .from("progress")
+        .select("student_id, created_at")
+        .gte("created_at", weekendStart.toISOString())
+        .lt("created_at", rangeEndExclusive.toISOString()),
+    ]);
+
+    const updatedIds = new Set((progressRows ?? []).map((p) => p.student_id));
+    const all = (students ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      grade: s.grade,
+      photoUrl: s.photo_url,
+    }));
+    const updatedStudents = all.filter((s) => updatedIds.has(s.id));
+    const missingStudents = all.filter((s) => !updatedIds.has(s.id));
+    const total = all.length;
+
+    return {
+      weekendStart: format(weekendStart, "yyyy-MM-dd"),
+      weekendEnd: format(weekendEnd, "yyyy-MM-dd"),
+      totalActiveStudents: total,
+      updatedCount: updatedStudents.length,
+      missingCount: missingStudents.length,
+      coveragePct: total > 0 ? Math.round((updatedStudents.length / total) * 100) : 0,
+      updatedStudents,
+      missingStudents,
+    };
   },
 };

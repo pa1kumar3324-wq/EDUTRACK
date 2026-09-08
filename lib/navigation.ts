@@ -6,6 +6,7 @@ import {
   BarChart3,
   FileDown,
   CalendarCheck,
+  CalendarRange,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ export const adminNav: NavItem[] = [
   { href: "/admin/students", label: "Students", icon: Users },
   { href: "/admin/volunteers", label: "Volunteers", icon: UserCog },
   { href: "/admin/attendance", label: "Attendance", icon: CalendarCheck },
+  { href: "/admin/coverage", label: "Weekend Coverage", icon: CalendarRange },
   { href: "/admin/roadmap", label: "Roadmap", icon: Map },
   { href: "/admin/reports", label: "Reports & Alerts", icon: FileDown },
 ];

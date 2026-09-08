@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { initials } from "@/lib/utils";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import type { AuthUser } from "@/lib/types";
 
 export function Topbar({ user, title }: { user: AuthUser; title?: string }) {
@@ -31,13 +32,17 @@ export function Topbar({ user, title }: { user: AuthUser; title?: string }) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
-      <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
+      <div className="flex shrink-0 items-center gap-2">
         <MobileNav user={user} />
-        {title && <h1 className="font-display text-sm font-semibold md:text-base">{title}</h1>}
+        {title && <h1 className="hidden font-display text-sm font-semibold md:block md:text-base">{title}</h1>}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 flex-1 justify-center sm:justify-start">
+        <GlobalSearch />
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
         <Button
           variant="ghost"
           size="icon"

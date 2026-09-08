@@ -10,10 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { LevelPicker } from "@/components/shared/LevelPicker";
 import { studentSchema, type StudentFormValues } from "@/lib/validations/student";
 import type { Student } from "@/lib/types/database";
 
-const LEVELS = ["beginner", "developing", "proficient", "advanced"] as const;
 const GRADES = Array.from({ length: 10 }, (_, i) => i + 1);
 
 interface StudentFormDialogProps {
@@ -101,11 +101,11 @@ export function StudentFormDialog({ open, onOpenChange, student, onSaved }: Stud
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Grade</Label>
               <Select value={String(watch("grade"))} onValueChange={(v) => setValue("grade", Number(v))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {GRADES.map((g) => (
                     <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>
@@ -114,26 +114,22 @@ export function StudentFormDialog({ open, onOpenChange, student, onSaved }: Stud
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>English level</Label>
-              <Select value={watch("english_level")} onValueChange={(v) => setValue("english_level", v as StudentFormValues["english_level"])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {LEVELS.map((l) => (
-                    <SelectItem key={l} value={l} className="capitalize">{l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label id="english-level-label">English level</Label>
+              <LevelPicker
+                id="english-level"
+                label="English level"
+                value={watch("english_level")}
+                onChange={(v) => setValue("english_level", v as StudentFormValues["english_level"])}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Math level</Label>
-              <Select value={watch("math_level")} onValueChange={(v) => setValue("math_level", v as StudentFormValues["math_level"])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {LEVELS.map((l) => (
-                    <SelectItem key={l} value={l} className="capitalize">{l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label id="math-level-label">Math level</Label>
+              <LevelPicker
+                id="math-level"
+                label="Math level"
+                value={watch("math_level")}
+                onChange={(v) => setValue("math_level", v as StudentFormValues["math_level"])}
+              />
             </div>
           </div>
 

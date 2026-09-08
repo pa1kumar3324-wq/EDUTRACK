@@ -59,6 +59,27 @@ export interface RecentActivityItem {
   summary: string;
 }
 
+export interface WeekendCoverageStudent {
+  id: string;
+  name: string;
+  grade: number;
+  photoUrl: string | null;
+}
+
+export interface WeekendCoverage {
+  /** ISO date (Saturday) marking the start of the weekend window shown. */
+  weekendStart: string;
+  /** ISO date (Sunday) marking the end of the weekend window shown. */
+  weekendEnd: string;
+  totalActiveStudents: number;
+  updatedCount: number;
+  missingCount: number;
+  /** updatedCount / totalActiveStudents, 0-100, rounded. */
+  coveragePct: number;
+  updatedStudents: WeekendCoverageStudent[];
+  missingStudents: WeekendCoverageStudent[];
+}
+
 export interface AuthUser {
   id: string;
   name: string;
