@@ -62,6 +62,10 @@ export const progressRepository = {
       homework: values.homework || null,
       notes: values.notes || null,
       suggested_next_lesson: values.suggested_next_lesson || null,
+      session_observations:
+        values.session_observations && Object.keys(values.session_observations).length > 0
+          ? (values.session_observations as Database["public"]["Tables"]["progress"]["Insert"]["session_observations"])
+          : null,
     };
     const { data, error } = await supabase.from("progress").insert(payload).select().single();
     if (error) throw error;

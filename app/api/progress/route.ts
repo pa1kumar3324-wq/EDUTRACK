@@ -6,7 +6,7 @@ import { roadmapRepository } from "@/lib/repositories/roadmapRepository";
 import { studentRepository } from "@/lib/repositories/studentRepository";
 import { studentRoadmapPositionRepository } from "@/lib/repositories/studentRoadmapPositionRepository";
 import { resolveRoadmapPosition, validateTopicAgainstRoadmap } from "@/lib/utils/roadmapEngine";
-import { generateAiSuggestion } from "@/lib/utils/suggestionEngine";
+import { heuristicSuggestion } from "@/lib/utils/suggestionEngine";
 
 /**
  * POST /api/progress
@@ -14,14 +14,22 @@ import { generateAiSuggestion } from "@/lib/utils/suggestionEngine";
  * Lesson" independently for EACH subject that was actually recorded this
  * session, using the same authoritative roadmap resolution logic as the
  * rest of the app (resolveRoadmapPosition — leader-set starting baseline
- * plus automatic recommendation) to decide WHAT to teach, and optionally
- * the Gemini API to decide HOW to phrase the teaching advice.
+ * plus automatic recommendation) to decide WHAT to teach, and the
+ * deterministic heuristic engine to decide HOW to phrase the teaching
+ * advice.
+ *
+ * NOTE: this route used to also call out to Gemini for a richer suggestion.
+ * That server-side Gemini path has been removed entirely (see CHANGELOG) —
+ * this route, and everything downstream of it, is 100% deterministic now
+ * and has zero external network dependency. The only AI system left in
+ * EduTrack is Tsareena (components/ai/*), a separate client-side,
+ * bring-your-own-key assistant that talks to Gemini directly from the
+ * volunteer's browser and never touches this API route or the server at
+ * all — see components/ai/TsareenaContext.ts.
  *
  * Math and English are resolved and suggested completely independently —
- * one subject's roadmap position/topic/status is never passed into the
- * other's Gemini call — and a Gemini failure on one subject falls back to
- * the deterministic heuristic for that subject only (generateAiSuggestion
- * already guarantees this internally; see lib/utils/suggestionEngine.ts).
+ * one subject's roadmap position/topic/status never influences the other's
+ * suggestion.
  *
  * RLS on the `progress` table enforces that a volunteer can only write for
  * students assigned to them; admins bypass that check.
@@ -105,10 +113,7 @@ export async function POST(request: Request) {
         baseline?.learning_roadmap ?? null
       );
 
-      // Gemini only ever receives this subject's own topic/status/roadmap
-      // decision — never the other subject's context.
-      return generateAiSuggestion({
-        studentName: student.name,
+      return heuristicSuggestion({
         grade: student.grade,
         subject,
         topic,
@@ -119,10 +124,6 @@ export async function POST(request: Request) {
       });
     }
 
-    // Run both subjects' Gemini requests concurrently — they're fully
-    // independent, and generateAiSuggestion already isolates failures (a
-    // Gemini error on one subject falls back to the heuristic for that
-    // subject only, it never rejects), so Promise.all is safe here.
     const [mathSuggestion, englishSuggestion] = await Promise.all([
       suggestForSubject("math"),
       suggestForSubject("english"),

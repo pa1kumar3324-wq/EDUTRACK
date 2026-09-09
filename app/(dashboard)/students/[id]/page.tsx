@@ -29,6 +29,8 @@ import { ProgressTimeline } from "@/components/student/ProgressTimeline";
 import { RoadmapProgressTracker } from "@/components/student/RoadmapProgressTracker";
 import { RoadmapPositionControl } from "@/components/student/RoadmapPositionControl";
 import { StudentJourneyChart } from "@/components/charts/StudentJourneyChart";
+import { TsareenaFocusRegistrar } from "@/components/ai/TsareenaFocusRegistrar";
+import { buildRecentSessionSummaries, resolveSubjectExistingSuggestion } from "@/components/ai/TsareenaContext";
 import { initials, formatRelativeDate } from "@/lib/utils";
 import type { Student, Progress } from "@/lib/types/database";
 
@@ -125,8 +127,40 @@ export default async function StudentProfilePage({
     (p) => p.homework
   );
 
+  // Page-aware context for Tsareena (§21 of the Tsareena spec): built from
+  // data this page already fetched via RLS-protected queries. May include
+  // the student's name (the UI already legitimately knows it) — the
+  // student name never crosses into a Gemini request; see
+  // components/ai/TsareenaContext.ts for the sanitizer that enforces this.
+  const latestRow = typedHistory[0];
+  const tsareenaFocusContext = {
+    studentName: student.name,
+    studentId: student.id,
+    grade: student.grade,
+    englishTopic: englishPosition?.topic ?? null,
+    englishStatus: latestRow?.english_status ?? null,
+    mathTopic: mathPosition?.topic ?? null,
+    mathStatus: latestRow?.math_status ?? null,
+    englishRoadmapPosition: englishPosition?.reason ?? null,
+    englishNextTopic: englishPosition?.topic ?? null,
+    englishRevisionState: englishPosition?.isRevision ? "revision" : "advancement",
+    mathRoadmapPosition: mathPosition?.reason ?? null,
+    mathNextTopic: mathPosition?.topic ?? null,
+    mathRevisionState: mathPosition?.isRevision ? "revision" : "advancement",
+    relevantNotes: latestRow?.notes ?? null,
+    existingHeuristicSuggestion: latestRow?.suggested_next_lesson ?? null,
+    // Per-subject slice of the most recent suggestion that actually covered
+    // that subject (§8 of the Tsareena spec) — see
+    // resolveSubjectExistingSuggestion for why this can't just be
+    // `latestRow.suggested_next_lesson`.
+    mathExistingSuggestion: resolveSubjectExistingSuggestion(typedHistory, "math"),
+    englishExistingSuggestion: resolveSubjectExistingSuggestion(typedHistory, "english"),
+    recentSessions: buildRecentSessionSummaries(typedHistory, 6),
+  };
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
+      <TsareenaFocusRegistrar context={tsareenaFocusContext} />
       <Button
         asChild
         variant="ghost"

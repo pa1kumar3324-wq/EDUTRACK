@@ -66,7 +66,7 @@ scripts/
 **Where the "continuity" logic lives:**
 - `supabase/schema.sql` — the `students_needing_revision` view flags a student if their last two logged statuses in a subject were both 🔴, or if there's been no update in 14+ days. The `latest_progress` view resolves each student's most recent session in one query.
 - `lib/utils/roadmapEngine.ts` — given a student's roadmap and history, decides whether to recommend revising the last topic (if it went badly) or the next topic in sequence.
-- `lib/utils/suggestionEngine.ts` — turns that into the human-readable "Suggested Next Lesson" text, optionally calling the Gemini API for a richer, personalized suggestion if `GEMINI_API_KEY` is set (falls back to a rule-based sentence if not).
+- `lib/utils/suggestionEngine.ts` — turns that into the human-readable "Suggested Next Lesson" text. Fully deterministic, zero network dependency — there is no server-side AI call anywhere in this path anymore (see the Tsareena section below for where AI moved to).
 
 ---
 
@@ -97,7 +97,6 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # only used server-side, by scripts/seed.ts and the invite API route
 NEXT_PUBLIC_SITE_URL=http://localhost:3000         # canonical URL of this deployment — see below
-GEMINI_API_KEY=                                    # optional — enables richer AI-generated lesson suggestions
 ```
 `SUPABASE_SERVICE_ROLE_KEY` must **never** be exposed to the client — it's only read in `scripts/seed.ts` and in the `/api/volunteers` invite route, both of which run server-side.
 
@@ -145,7 +144,7 @@ A database trigger (`handle_new_auth_user`) automatically creates their `volunte
 1. Push this repository to GitHub/GitLab/Bitbucket.
 2. In Vercel, **Import Project** and select the repo.
 3. Add the environment variables from `.env.local` in **Project Settings → Environment Variables** (Production + Preview):
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (never expose this last one as a `NEXT_PUBLIC_*` variable), and optionally `GEMINI_API_KEY`.
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (never expose this last one as a `NEXT_PUBLIC_*` variable). There is no Gemini-related env var — Tsareena's Gemini key is entered per-volunteer in the browser, never configured server-side.
    - **`NEXT_PUBLIC_SITE_URL` — required for Production.** Set it to your production URL, e.g. `NEXT_PUBLIC_SITE_URL=https://edutrack.vercel.app`. Without this, `POST /api/volunteers` (inviting a volunteer) will return a clear `500` error rather than silently sending an invite email that points at localhost or an unintended host. If you also want to invite volunteers from Preview deployments, set it there too (pointed at whichever URL you want those invite links to use).
 4. In Supabase, go to **Authentication → URL Configuration** and set:
    - **Site URL**: the same value as `NEXT_PUBLIC_SITE_URL` above (e.g. `https://edutrack.vercel.app`)
@@ -190,9 +189,16 @@ This is enforced in two layers: Postgres Row Level Security policies (the source
 
 ## Notes on the AI "Suggested Next Lesson" feature
 
-After every progress submission, `lib/utils/suggestionEngine.ts` generates a one-line suggestion for the next volunteer. It works in two modes:
-- **With `GEMINI_API_KEY` set**: calls the Gemini API (`gemini-3.6-flash`) for a suggestion tailored to what was taught, how it went, and the next roadmap topic.
-- **Without it**: falls back to a deterministic, rule-based sentence built from the roadmap engine's recommendation — so the feature always works, even with zero external dependencies.
+After every progress submission, `lib/utils/suggestionEngine.ts` generates a one-line, deterministic, rule-based suggestion built from the roadmap engine's recommendation. It has no external dependency and no server-side AI call — it always works, for every volunteer, with zero setup.
+
+## Notes on Tsareena (the AI assistant)
+
+EduTrack also ships an optional, personality-driven assistant called **Tsareena** (`components/ai/*`). Unlike the old server-side suggestion engine, Tsareena is a **client-side, bring-your-own-key** assistant:
+- Each volunteer optionally connects their own personal Gemini API key from inside the assistant's settings panel.
+- That key lives only in the browser (React state, optionally `sessionStorage` for the current tab session) and is **never** sent to EduTrack's backend, stored in Supabase, or logged anywhere.
+- Gemini requests go directly from the volunteer's browser to Google's API using `@google/genai` — EduTrack's server is never in that request path.
+- The student's name, ID, Supabase UID, email, phone, or any other identifier is **never** included in any Gemini-bound request — see `components/ai/TsareenaContext.ts` for the allow-listed context builder and `components/ai/TsareenaPrompt.ts` for the system prompt that enforces this.
+- Without a connected key, Tsareena still shows her personality (launcher, greeting, occasional comments) and clearly explains that her "advanced brain" needs a Gemini key — everything else in EduTrack works completely normally either way.
 
 ---
 

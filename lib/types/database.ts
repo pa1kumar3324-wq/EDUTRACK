@@ -78,6 +78,17 @@ export type Progress = {
   homework: string | null;
   notes: string | null;
   suggested_next_lesson: string | null;
+  /**
+   * Structured per-session observations (mood, participation, lesson
+   * execution, teaching approach, outcome, session quality). Null for rows
+   * predating supabase/migrations/004_session_observations.sql, and for any
+   * row logged without filling in the structured section. See
+   * lib/types/sessionObservations.ts for the shape; Postgres stores this as
+   * a plain jsonb column and does not enforce the shape itself, so this
+   * type plus the zod schema in lib/validations/sessionObservations.ts are
+   * the only structural guarantees.
+   */
+  session_observations: import("./sessionObservations").SessionObservations | null;
   session_date: string;
   created_at: string;
 };

@@ -105,6 +105,11 @@ create table progress (
   homework              text,
   notes                 text,
   suggested_next_lesson text,
+  -- Structured per-session observations (mood, participation, lesson
+  -- execution, teaching approach, outcome, session quality). See
+  -- lib/types/sessionObservations.ts and
+  -- supabase/migrations/004_session_observations.sql.
+  session_observations  jsonb,
   session_date          date not null default current_date,
   created_at            timestamptz not null default now()
 );
@@ -218,6 +223,46 @@ create policy "volunteers_admin_write" on volunteers for all
   using (is_admin()) with check (is_admin());
 create policy "volunteers_self_update" on volunteers for update
   using (id = auth.uid()) with check (id = auth.uid());
+
+-- RLS is row-level, not column-level: "volunteers_self_update" above lets a
+-- volunteer update their own row, but has no way to say "except role/
+-- is_active". Those two columns participate directly in authorization
+-- (is_admin() and every policy built on it key off `role`), so a BEFORE
+-- UPDATE trigger enforces the column boundary that RLS alone cannot. See
+-- supabase/migrations/005_volunteer_privilege_escalation_guard.sql for the
+-- full rationale.
+create or replace function prevent_volunteer_privilege_escalation()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  -- service_role (invite flow, seed script) bypasses RLS by design and has
+  -- no auth.uid() to check against — exempt it the same way RLS already
+  -- does, rather than letting is_admin() read as false for it below.
+  if auth.role() = 'service_role' then
+    return new;
+  end if;
+
+  if is_admin() then
+    return new;
+  end if;
+
+  if new.role is distinct from old.role then
+    raise exception 'You do not have permission to change your role.' using errcode = '42501';
+  end if;
+
+  if new.is_active is distinct from old.is_active then
+    raise exception 'You do not have permission to change your active status.' using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_prevent_volunteer_privilege_escalation
+before update on volunteers
+for each row execute function prevent_volunteer_privilege_escalation();
 
 -- students table — everyone authenticated can read; only admins write
 create policy "students_select_all" on students for select using (auth.role() = 'authenticated');

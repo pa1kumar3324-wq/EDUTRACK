@@ -13,9 +13,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusPicker } from "@/components/shared/StatusPicker";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Disclosure } from "@/components/progress/Disclosure";
+import { StudentStateFields } from "@/components/progress/StudentStateFields";
+import { SubjectObservationsFields } from "@/components/progress/SubjectObservationsFields";
+import { SessionQualityFields } from "@/components/progress/SessionQualityFields";
 import { progressSchema, type ProgressFormValues } from "@/lib/validations/progress";
 import { useProgress } from "@/hooks/useProgress";
+import { useTsareenaStore } from "@/store/useTsareenaStore";
 import type { LearningRoadmapEntry, Student, Subject } from "@/lib/types/database";
+import type { SessionObservations, SubjectSessionObservations } from "@/lib/types/sessionObservations";
 
 export function ProgressForm({ student, roadmap }: { student: Student; roadmap: LearningRoadmapEntry[] }) {
   const router = useRouter();
@@ -57,11 +63,40 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
     }
   }
 
+  // Structured session observations (§34-36 of the Tsareena/rich-logging
+  // spec) — an additive, entirely optional object stored alongside the
+  // existing flat fields. Managed as one controlled RHF field rather than
+  // dozens of registered inputs, since most of it comes from ScaleSelect
+  // chip groups rather than native form controls.
+  const observations = watch("session_observations") ?? {};
+  function updateObservations(patch: Partial<SessionObservations>) {
+    setValue("session_observations", { ...observations, ...patch }, { shouldDirty: true });
+  }
+  function updateSubjectObservations(subject: "english" | "math", patch: Partial<SubjectSessionObservations>) {
+    setValue(
+      "session_observations",
+      { ...observations, [subject]: { ...(observations[subject] ?? {}), ...patch } },
+      { shouldDirty: true }
+    );
+  }
+
+  const notifyEvent = useTsareenaStore((s) => s.notifyEvent);
+
   async function onSubmit(values: ProgressFormValues) {
     const result = await submitProgress(values);
     setMathSuggestion(result.mathSuggestion ?? null);
     setEnglishSuggestion(result.englishSuggestion ?? null);
     setShowSuccess(true);
+
+    // Tell Tsareena a meaningful event happened (§13) — she decides
+    // whether the cooldown allows a comment; this call never blocks or
+    // delays the redirect below.
+    if (values.english_topic && values.math_topic) {
+      notifyEvent("both_subjects_logged");
+    } else {
+      notifyEvent("progress_logged");
+    }
+
     setTimeout(() => {
       router.push(`/students/${student.id}`);
       router.refresh();
@@ -114,6 +149,16 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Student state today</CardTitle>
+          <CardDescription>A quick read on mood, energy, and focus — tap to select, skip anything that doesn't apply.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <StudentStateFields value={observations} onChange={updateObservations} />
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -154,6 +199,13 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
                 onChange={(v) => setValue("english_status", v as ProgressFormValues["english_status"])}
               />
             </div>
+            <Disclosure title="Session details" subtitle="optional — richer context for Tsareena">
+              <SubjectObservationsFields
+                subjectId="english"
+                value={observations.english ?? {}}
+                onChange={(patch) => updateSubjectObservations("english", patch)}
+              />
+            </Disclosure>
           </CardContent>
         </Card>
 
@@ -196,6 +248,13 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
                 onChange={(v) => setValue("math_status", v as ProgressFormValues["math_status"])}
               />
             </div>
+            <Disclosure title="Session details" subtitle="optional — richer context for Tsareena">
+              <SubjectObservationsFields
+                subjectId="math"
+                value={observations.math ?? {}}
+                onChange={(patch) => updateSubjectObservations("math", patch)}
+              />
+            </Disclosure>
           </CardContent>
         </Card>
       </div>
@@ -203,6 +262,16 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
       {errors.english_topic && (
         <p className="text-sm text-destructive">{errors.english_topic.message}</p>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Session quality</CardTitle>
+          <CardDescription>How the session went overall — optional, but useful for spotting patterns over time.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SessionQualityFields value={observations} onChange={updateObservations} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="flex flex-col gap-4 p-5">

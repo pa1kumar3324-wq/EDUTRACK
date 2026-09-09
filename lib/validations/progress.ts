@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sessionObservationsSchema } from "@/lib/validations/sessionObservations";
 
 export const progressSchema = z
   .object({
@@ -14,6 +15,11 @@ export const progressSchema = z
     math_roadmap_id: z.string().uuid().optional().nullable(),
     homework: z.string().max(1000).optional().or(z.literal("")),
     notes: z.string().max(2000).optional().or(z.literal("")),
+    // Rich, structured per-session observations (mood, participation,
+    // lesson execution, teaching approach, outcome, session quality — see
+    // lib/types/sessionObservations.ts). Entirely optional and additive;
+    // omitting it changes nothing about existing progress semantics.
+    session_observations: sessionObservationsSchema.optional(),
   })
   .refine((data) => data.english_topic || data.math_topic, {
     message: "Log at least one subject taught this session",
