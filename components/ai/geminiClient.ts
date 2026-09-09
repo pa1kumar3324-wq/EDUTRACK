@@ -53,9 +53,19 @@ export async function validateGeminiKey(apiKey: string): Promise<void> {
     const response = await ai.models.generateContent({
       model: TSAREENA_MODEL,
       contents: "Reply with the single word: ready",
-      config: { maxOutputTokens: 10 },
+      // 10 was too tight — gemini-3.6-flash can spend a few tokens on
+      // leading formatting before the actual word, which hit MAX_TOKENS
+      // and came back with empty content, failing validation on a valid key.
+      config: { maxOutputTokens: 40 },
     });
-    if (typeof response.text !== "string") {
+    const finishReason = response.candidates?.[0]?.finishReason;
+    if (typeof response.text !== "string" || !response.text.trim()) {
+      if (finishReason === "MAX_TOKENS") {
+        throw new GeminiRequestError(
+          "unknown",
+          "Gemini's key check got cut off before it could reply. Try again — if it keeps happening, the key may still be fine.",
+        );
+      }
       throw new GeminiRequestError("empty_response", "Gemini gave an empty response during validation.");
     }
   } catch (error) {
@@ -83,6 +93,13 @@ export async function sendTsareenaMessage(apiKey: string, turns: GeminiTurn[]): 
     });
     const text = response.text;
     if (typeof text !== "string" || !text.trim()) {
+      const finishReason = response.candidates?.[0]?.finishReason;
+      if (finishReason === "MAX_TOKENS") {
+        throw new GeminiRequestError(
+          "empty_response",
+          "That answer ran out of room before it finished. Try asking a more specific question.",
+        );
+      }
       throw new GeminiRequestError("empty_response", "Gemini gave an empty response. Try rephrasing the question.");
     }
     return text.trim();
