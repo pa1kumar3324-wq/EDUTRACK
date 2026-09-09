@@ -68,7 +68,7 @@ export async function GET(request: Request) {
         id: v.id,
         label: v.name,
         sublabel: v.email,
-        href: `/admin/volunteers`,
+        href: `/admin/people/volunteers`,
       });
     }
   }

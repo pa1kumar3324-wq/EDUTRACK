@@ -41,6 +41,7 @@ function toIsoDate(d: Date) {
 
 export function ExportPanel() {
   const [type, setType] = useState<"students" | "progress" | "attendance">("students");
+  const [attendanceView, setAttendanceView] = useState<"summary" | "detailed">("summary");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [loadingFormat, setLoadingFormat] = useState<string | null>(null);
@@ -64,6 +65,7 @@ export function ExportPanel() {
   function buildQuery(format: string) {
     const params = new URLSearchParams({ type, format });
     if (isAttendance) {
+      params.set("view", attendanceView);
       if (from) params.set("from", from);
       if (to) params.set("to", to);
     }
@@ -81,7 +83,7 @@ export function ExportPanel() {
     }
     setLoadingFormat(format);
     try {
-      const suffix = isAttendance ? `-${from}_to_${to}` : "";
+      const suffix = isAttendance ? `-${attendanceView}-${from}_to_${to}` : "";
 
       if (format === "pdf") {
         const res = await fetch(`/api/export?${buildQuery("json")}`);
@@ -101,7 +103,14 @@ export function ExportPanel() {
         const { default: autoTable } = await import("jspdf-autotable");
         const doc = new jsPDF({ orientation: "landscape" });
         doc.setFontSize(14);
-        const typeLabel = type === "students" ? "Students" : type === "attendance" ? "Attendance" : "Progress";
+        const typeLabel =
+          type === "students"
+            ? "Students"
+            : type === "attendance"
+              ? attendanceView === "summary"
+                ? "Attendance — Volunteer Summary"
+                : "Attendance — Detailed"
+              : "Progress";
         doc.text(`EduTrack — ${typeLabel} Report`, 14, 16);
         if (isAttendance) {
           doc.setFontSize(10);
@@ -157,6 +166,16 @@ export function ExportPanel() {
           {isAttendance && (
             <>
               <div className="flex flex-col gap-1.5">
+                <Label>View</Label>
+                <Select value={attendanceView} onValueChange={(v) => setAttendanceView(v as "summary" | "detailed")}>
+                  <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="summary">Volunteer Summary</SelectItem>
+                    <SelectItem value="detailed">Detailed Attendance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
                 <Label htmlFor="export-from">From date</Label>
                 <Input id="export-from" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} className="w-40" />
               </div>
@@ -176,8 +195,10 @@ export function ExportPanel() {
         {isAttendance && (
           <p className="text-xs text-muted-foreground">
             {rangeIncomplete
-              ? "Pick a 'From' and 'To' date to build the attendance register."
-              : `Exporting the attendance register from ${from} to ${to}, one row per active volunteer with a status column for each day.`}
+              ? "Pick a 'From' and 'To' date to build the attendance export."
+              : attendanceView === "summary"
+                ? `Exporting sessions attended from ${from} to ${to}, one row per volunteer.`
+                : `Exporting the detailed attendance register from ${from} to ${to}, one row per volunteer with a status column for each session date.`}
           </p>
         )}
         {rangeInvalid && <p className="text-xs text-destructive">'From' date must be before 'To' date.</p>}

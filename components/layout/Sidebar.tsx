@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraduationCap, Bell } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getNavForRole } from "@/lib/navigation";
+import { getNavForRole, isNavItemActive } from "@/lib/navigation";
 import type { AuthUser } from "@/lib/types";
 
 export function Sidebar({ user }: { user: AuthUser }) {
@@ -22,7 +22,7 @@ export function Sidebar({ user }: { user: AuthUser }) {
 
       <nav className="flex-1 space-y-1 p-3">
         {items.map((item) => {
-          const active = pathname === item.href;
+          const active = isNavItemActive(pathname, item.href);
           return (
             <Link
               key={item.href}
@@ -40,18 +40,6 @@ export function Sidebar({ user }: { user: AuthUser }) {
           );
         })}
       </nav>
-
-      {user.role === "admin" && (
-        <div className="border-t border-border p-3">
-          <Link
-            href="/admin/reports"
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
-          >
-            <Bell className="h-3.5 w-3.5" />
-            Alerts &amp; notifications
-          </Link>
-        </div>
-      )}
     </aside>
   );
 }

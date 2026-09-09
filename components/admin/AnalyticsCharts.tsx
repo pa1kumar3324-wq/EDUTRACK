@@ -20,7 +20,6 @@ import type {
   WeeklyProgressPoint,
   LevelDistributionPoint,
   WeakTopicPoint,
-  VolunteerActivityPoint,
 } from "@/lib/types";
 
 const AXIS_STYLE = { fontSize: 12 };
@@ -97,25 +96,3 @@ export function WeakTopicsChart({ data }: { data: WeakTopicPoint[] }) {
   );
 }
 
-export function VolunteerActivityChart({ data }: { data: VolunteerActivityPoint[] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm">Volunteer Activity</CardTitle>
-      </CardHeader>
-      <CardContent className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-            <XAxis dataKey="name" tick={AXIS_STYLE} interval={0} angle={-20} textAnchor="end" height={50} />
-            <YAxis allowDecimals={false} tick={AXIS_STYLE} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey="updates" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="studentsAssigned" fill="hsl(var(--secondary-foreground))" radius={[6, 6, 0, 0]} fillOpacity={0.3} />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  );
-}

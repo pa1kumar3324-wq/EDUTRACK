@@ -36,12 +36,6 @@ export interface WeakTopicPoint {
   count: number;
 }
 
-export interface VolunteerActivityPoint {
-  name: string;
-  updates: number;
-  studentsAssigned: number;
-}
-
 export interface SearchResultItem {
   type: "student" | "volunteer";
   id: string;

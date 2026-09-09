@@ -23,7 +23,7 @@ export function CoverageBoard({ coverage }: { coverage: WeekendCoverage }) {
   function navigate(deltaWeeks: -1 | 1) {
     setIsPending(true);
     const next = format(addDays(start, deltaWeeks * 7), "yyyy-MM-dd");
-    router.push(`/admin/coverage?weekend=${next}`);
+    router.push(`/admin/reports-coverage/coverage?weekend=${next}`);
   }
 
   const ringColor =

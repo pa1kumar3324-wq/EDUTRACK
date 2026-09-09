@@ -3,7 +3,6 @@ import type {
   AdminStats,
   DashboardStats,
   LevelDistributionPoint,
-  VolunteerActivityPoint,
   WeakTopicPoint,
   WeeklyProgressPoint,
   WeekendCoverage,
@@ -135,20 +134,6 @@ export const analyticsRepository = {
       .map(([topic, count]) => ({ topic, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
-  },
-
-  async volunteerActivity(supabase: Client): Promise<VolunteerActivityPoint[]> {
-    const [{ data: volunteers }, { data: progressRows }, { data: assignmentRows }] = await Promise.all([
-      supabase.from("volunteers").select("id, name").eq("role", "volunteer").eq("is_active", true),
-      supabase.from("progress").select("volunteer_id"),
-      supabase.from("assignments").select("volunteer_id"),
-    ]);
-
-    return (volunteers ?? []).map((v) => ({
-      name: v.name,
-      updates: (progressRows ?? []).filter((p) => p.volunteer_id === v.id).length,
-      studentsAssigned: (assignmentRows ?? []).filter((a) => a.volunteer_id === v.id).length,
-    }));
   },
 
   /** Volunteers who haven't logged an update for any assigned student in `days`. */

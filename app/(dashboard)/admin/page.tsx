@@ -9,7 +9,6 @@ import {
   WeeklyProgressChart,
   LevelDistributionChart,
   WeakTopicsChart,
-  VolunteerActivityChart,
 } from "@/components/admin/AnalyticsCharts";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import type { RecentActivityItem } from "@/lib/types";
@@ -18,14 +17,13 @@ export default async function AdminOverviewPage() {
   await requireAdmin();
   const supabase = await createClient();
 
-  const [stats, weeklyProgress, englishLevels, mathLevels, weakTopics, volunteerActivity, recentRows] =
+  const [stats, weeklyProgress, englishLevels, mathLevels, weakTopics, recentRows] =
     await Promise.all([
       analyticsRepository.adminStats(supabase),
       analyticsRepository.weeklyProgress(supabase),
       analyticsRepository.levelDistribution(supabase, "english"),
       analyticsRepository.levelDistribution(supabase, "math"),
       analyticsRepository.weakTopics(supabase),
-      analyticsRepository.volunteerActivity(supabase),
       progressRepository.recent(supabase, 8),
     ]);
 
@@ -52,7 +50,7 @@ const recentActivity: RecentActivityItem[] = recentRows.map((r: RecentRow) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Admin Overview" description="Program-wide analytics, at a glance." />
+      <PageHeader title="Analytics" description="Program-wide analytics, at a glance." />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Total Students" value={stats.totalStudents} icon={Users} />
@@ -61,9 +59,8 @@ const recentActivity: RecentActivityItem[] = recentRows.map((r: RecentRow) => {
         <StatCard label="Needing Revision" value={stats.studentsNeedingRevision} icon={AlertTriangle} tone="destructive" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <WeeklyProgressChart data={weeklyProgress} />
-        <VolunteerActivityChart data={volunteerActivity} />
         <LevelDistributionChart title="English Levels" data={englishLevels} />
         <LevelDistributionChart title="Math Levels" data={mathLevels} />
       </div>

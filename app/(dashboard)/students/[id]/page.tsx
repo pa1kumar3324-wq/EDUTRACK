@@ -136,7 +136,7 @@ export default async function StudentProfilePage({
         <Link
           href={
             user.role === "admin"
-              ? "/admin/students"
+              ? "/admin/people/students"
               : "/dashboard"
           }
         >
