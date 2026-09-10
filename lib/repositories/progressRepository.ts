@@ -8,7 +8,7 @@ export const progressRepository = {
   async listForStudent(supabase: Client, studentId: string) {
     const { data, error } = await supabase
       .from("progress")
-      .select("*, volunteers(name)")
+      .select("*, volunteers(name, preferred_name)")
       .eq("student_id", studentId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -34,7 +34,7 @@ export const progressRepository = {
   async recent(supabase: Client, limit = 10) {
     const { data, error } = await supabase
       .from("progress")
-      .select("*, students(name), volunteers(name)")
+      .select("*, students(name), volunteers(name, preferred_name)")
       .order("created_at", { ascending: false })
       .limit(limit);
     if (error) throw error;

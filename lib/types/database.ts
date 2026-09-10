@@ -21,12 +21,20 @@ export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 
 export type Volunteer = {
   id: string;
+  /** Official/legal name — for formal records (attendance exports, admin). Prefer `preferred_name` (via displayName()) elsewhere. */
   name: string;
   email: string;
   phone: string | null;
   role: UserRole;
   avatar_url: string | null;
   is_active: boolean;
+  /** Everyday display identity. Falls back to `name` when null — see displayName() in lib/utils.ts. */
+  preferred_name: string | null;
+  /** For birthday functionality only — never derive/display age from this. */
+  date_of_birth: string | null;
+  bio: string | null;
+  teaching_interests: string | null;
+  fun_fact: string | null;
   created_at: string;
 };
 

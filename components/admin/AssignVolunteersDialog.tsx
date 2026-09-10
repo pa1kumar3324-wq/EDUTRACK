@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { initials } from "@/lib/utils";
+import { initials, displayName } from "@/lib/utils";
 import type { Student, Volunteer } from "@/lib/types/database";
 
 interface AssignVolunteersDialogProps {
@@ -96,11 +96,11 @@ export function AssignVolunteersDialog({
               >
                 <Checkbox checked={selected.has(v.id)} onCheckedChange={() => toggle(v.id)} />
                 <Avatar className="h-7 w-7">
-                  <AvatarImage src={v.avatar_url ?? undefined} alt={v.name} />
-                  <AvatarFallback className="text-[10px]">{initials(v.name)}</AvatarFallback>
+                  <AvatarImage src={v.avatar_url ?? undefined} alt={displayName(v)} />
+                  <AvatarFallback className="text-[10px]">{initials(displayName(v))}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{v.name}</p>
+                  <p className="truncate text-sm font-medium">{displayName(v)}</p>
                   <p className="truncate text-xs text-muted-foreground">{v.email}</p>
                 </div>
               </label>

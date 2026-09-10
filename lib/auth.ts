@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { AuthUser } from "@/lib/types";
+import { displayName } from "@/lib/utils";
 
 /**
  * Resolves the current authenticated user's profile row (role, name, etc).
@@ -26,6 +27,8 @@ export async function requireUser(): Promise<AuthUser> {
   return {
     id: profile.id,
     name: profile.name,
+    preferredName: profile.preferred_name,
+    displayName: displayName(profile),
     email: profile.email,
     role: profile.role,
     avatarUrl: profile.avatar_url,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth";
+import { displayName } from "@/lib/utils";
 import type { SearchResultItem } from "@/lib/types";
 
 /**
@@ -58,17 +59,17 @@ export async function GET(request: Request) {
   if (user.role === "admin") {
     const { data: volunteers } = await supabase
       .from("volunteers")
-      .select("id, name, email")
+      .select("id, name, preferred_name, email")
       .eq("is_active", true)
-      .ilike("name", `%${q}%`)
+      .or(`name.ilike.%${q}%,preferred_name.ilike.%${q}%`)
       .limit(5);
     for (const v of volunteers ?? []) {
       results.push({
         type: "volunteer",
         id: v.id,
-        label: v.name,
+        label: displayName(v),
         sublabel: v.email,
-        href: `/admin/people/volunteers`,
+        href: `/volunteers/${v.id}`,
       });
     }
   }

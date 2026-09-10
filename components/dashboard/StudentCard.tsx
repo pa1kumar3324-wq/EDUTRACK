@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { initials, formatRelativeDate, LEVEL_LABELS } from "@/lib/utils";
+import { initials, formatRelativeDate, LEVEL_LABELS, displayName } from "@/lib/utils";
 import type { StudentWithProgress } from "@/lib/types";
 
 const STATUS_BADGE: Record<StudentWithProgress["status"], { label: string; variant: "success" | "warning" | "destructive" }> = {
@@ -56,9 +56,9 @@ export function StudentCard({ data, index = 0 }: { data: StudentWithProgress; in
           {assignedVolunteers.length > 0 && (
             <div className="flex items-center -space-x-2">
               {assignedVolunteers.slice(0, 4).map((v) => (
-                <Avatar key={v.id} className="h-6 w-6 border-2 border-card" title={v.name}>
-                  <AvatarImage src={v.avatar_url ?? undefined} alt={v.name} />
-                  <AvatarFallback className="text-[10px]">{initials(v.name)}</AvatarFallback>
+                <Avatar key={v.id} className="h-6 w-6 border-2 border-card" title={displayName(v)}>
+                  <AvatarImage src={v.avatar_url ?? undefined} alt={displayName(v)} />
+                  <AvatarFallback className="text-[10px]">{initials(displayName(v))}</AvatarFallback>
                 </Avatar>
               ))}
               {assignedVolunteers.length > 4 && (

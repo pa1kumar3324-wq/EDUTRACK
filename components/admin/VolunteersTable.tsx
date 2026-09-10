@@ -4,20 +4,21 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Plus, Loader2, UserCog, MoreVertical, ShieldCheck, UserX } from "lucide-react";
+import { Plus, Loader2, UserCog, MoreVertical, ShieldCheck, UserX, Cake, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import Link from "next/link";
 import { volunteerSchema, type VolunteerFormValues } from "@/lib/validations/roadmap";
-import { initials } from "@/lib/utils";
+import { initials, displayName, isBirthdayUpcoming } from "@/lib/utils";
 import type { Volunteer } from "@/lib/types/database";
 
 export function VolunteersTable({ initialVolunteers, studentCounts }: { initialVolunteers: Volunteer[]; studentCounts: Record<string, number> }) {
@@ -70,7 +71,7 @@ export function VolunteersTable({ initialVolunteers, studentCounts }: { initialV
     });
     if (res.ok) {
       setVolunteers((prev) => prev.map((x) => (x.id === v.id ? { ...x, role: newRole } : x)));
-      toast.success(`${v.name} is now ${newRole === "admin" ? "an admin" : "a volunteer"}`);
+      toast.success(`${displayName(v)} is now ${newRole === "admin" ? "an admin" : "a volunteer"}`);
     } else {
       toast.error("Failed to update role");
     }
@@ -98,92 +99,68 @@ export function VolunteersTable({ initialVolunteers, studentCounts }: { initialV
       {volunteers.length === 0 ? (
         <EmptyState icon={UserCog} title="No volunteers yet" description="Invite your first volunteer to get started." />
       ) : (
-        <>
-          {/* Mobile: card list */}
-          <div className="flex flex-col gap-3 md:hidden">
-            {volunteers.map((v) => (
-              <div key={v.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 shadow-soft">
-                <Avatar className="h-11 w-11 shrink-0">
-                  <AvatarImage src={v.avatar_url ?? undefined} alt={v.name} />
-                  <AvatarFallback>{initials(v.name)}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-display font-semibold">{v.name}</p>
-                    <Badge variant={v.role === "admin" ? "default" : "outline"} className="shrink-0 capitalize">{v.role}</Badge>
-                  </div>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {v.email} · {studentCounts[v.id] ?? 0} student{studentCounts[v.id] === 1 ? "" : "s"}
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label={`Actions for ${v.name}`}>
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => toggleRole(v)}>
-                      <ShieldCheck className="h-4 w-4" /> {v.role === "admin" ? "Make volunteer" : "Make admin"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setDeactivateTarget(v)} className="text-destructive focus:text-destructive">
-                      <UserX className="h-4 w-4" /> Deactivate
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop / tablet: full table */}
-          <Table className="hidden md:table">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Volunteer</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Students assigned</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {volunteers.map((v) => (
-                <TableRow key={v.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={v.avatar_url ?? undefined} alt={v.name} />
-                        <AvatarFallback className="text-xs">{initials(v.name)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{v.name}</p>
-                        <p className="text-xs text-muted-foreground">{v.email}</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {volunteers.map((v) => {
+            const showBirthdayBadge = !!v.date_of_birth && isBirthdayUpcoming(v.date_of_birth);
+            return (
+              <Card key={v.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar className="h-11 w-11 shrink-0">
+                      <AvatarImage src={v.avatar_url ?? undefined} alt={displayName(v)} />
+                      <AvatarFallback>{initials(displayName(v))}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="truncate font-display font-semibold">{displayName(v)}</p>
+                        {showBirthdayBadge && (
+                          <Badge variant="outline" className="shrink-0 gap-1 px-1.5 py-0 text-[10px]">
+                            <Cake className="h-3 w-3" /> Birthday
+                          </Badge>
+                        )}
                       </div>
+                      <Badge variant={v.role === "admin" ? "default" : "outline"} className="mt-0.5 capitalize">{v.role}</Badge>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={v.role === "admin" ? "default" : "outline"} className="capitalize">{v.role}</Badge>
-                  </TableCell>
-                  <TableCell>{studentCounts[v.id] ?? 0}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => toggleRole(v)}>
-                          <ShieldCheck className="h-4 w-4" /> {v.role === "admin" ? "Make volunteer" : "Make admin"}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeactivateTarget(v)} className="text-destructive focus:text-destructive">
-                          <UserX className="h-4 w-4" /> Deactivate
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={`Actions for ${displayName(v)}`}>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => toggleRole(v)}>
+                        <ShieldCheck className="h-4 w-4" /> {v.role === "admin" ? "Make volunteer" : "Make admin"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDeactivateTarget(v)} className="text-destructive focus:text-destructive">
+                        <UserX className="h-4 w-4" /> Deactivate
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <p className="truncate text-xs text-muted-foreground">
+                  {v.email} · {studentCounts[v.id] ?? 0} student{studentCounts[v.id] === 1 ? "" : "s"}
+                </p>
+
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Teaching subject</p>
+                  {v.teaching_interests ? (
+                    <p className="text-sm">{v.teaching_interests}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No subject listed yet</p>
+                  )}
+                </div>
+
+                <Button variant="outline" size="sm" className="mt-auto w-full" asChild>
+                  <Link href={`/volunteers/${v.id}`}>
+                    View profile <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
@@ -232,7 +209,7 @@ export function VolunteersTable({ initialVolunteers, studentCounts }: { initialV
         open={!!deactivateTarget}
         onOpenChange={(open) => !open && setDeactivateTarget(null)}
         title="Deactivate this volunteer?"
-        description={deactivateTarget ? `Deactivate ${deactivateTarget.name}? Their history stays, but they'll lose login access.` : ""}
+        description={deactivateTarget ? `Deactivate ${displayName(deactivateTarget)}? Their history stays, but they'll lose login access.` : ""}
         confirmLabel="Deactivate"
         onConfirm={() => {
           if (deactivateTarget) return deactivate(deactivateTarget);

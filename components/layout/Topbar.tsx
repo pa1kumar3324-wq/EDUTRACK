@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogOut, Moon, Sun, User as UserIcon } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -57,24 +58,30 @@ export function Topbar({ user, title }: { user: AuthUser; title?: string }) {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-secondary">
               <Avatar className="h-7 w-7">
-                <AvatarImage src={user.avatarUrl ?? undefined} alt={user.name} />
-                <AvatarFallback>{initials(user.name)}</AvatarFallback>
+                <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} />
+                <AvatarFallback>{initials(user.displayName)}</AvatarFallback>
               </Avatar>
               <div className="hidden text-left sm:block">
-                <p className="text-xs font-medium leading-tight">{user.name}</p>
+                <p className="text-xs font-medium leading-tight">{user.displayName}</p>
               </div>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>
               <div className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{user.name}</span>
+                <span className="text-sm font-medium">{user.displayName}</span>
                 <span className="text-xs font-normal text-muted-foreground">{user.email}</span>
                 <Badge variant="outline" className="mt-1 w-fit capitalize">
                   <UserIcon className="h-3 w-3" /> {user.role}
                 </Badge>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href={`/volunteers/${user.id}`}>
+                <UserIcon className="h-4 w-4" /> View profile
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
               <LogOut className="h-4 w-4" /> Sign out

@@ -76,7 +76,12 @@ export interface WeekendCoverage {
 
 export interface AuthUser {
   id: string;
+  /** Official/legal name — for formal contexts only. Use displayName for everyday UI. */
   name: string;
+  /** Raw preferred_name value, before fallback — usually you want `displayName` instead. */
+  preferredName: string | null;
+  /** preferredName || name — use this in greetings, dashboards, and general UI. */
+  displayName: string;
   email: string;
   role: import("./database").UserRole;
   avatarUrl: string | null;

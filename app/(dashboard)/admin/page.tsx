@@ -11,6 +11,7 @@ import {
   WeakTopicsChart,
 } from "@/components/admin/AnalyticsCharts";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { displayName } from "@/lib/utils";
 import type { RecentActivityItem } from "@/lib/types";
 
 export default async function AdminOverviewPage() {
@@ -34,7 +35,7 @@ export default async function AdminOverviewPage() {
   english_topic: string | null;
   math_topic: string | null;
   students: { name: string } | null;
-  volunteers: { name: string } | null;
+  volunteers: { name: string; preferred_name: string | null } | null;
 };
 
 const recentActivity: RecentActivityItem[] = recentRows.map((r: RecentRow) => {
@@ -42,7 +43,7 @@ const recentActivity: RecentActivityItem[] = recentRows.map((r: RecentRow) => {
     id: r.id,
     studentId: r.student_id,
     studentName: r.students?.name ?? "Unknown",
-    volunteerName: r.volunteers?.name ?? "Unknown",
+    volunteerName: r.volunteers ? displayName(r.volunteers) : "Unknown",
     createdAt: r.created_at,
     summary: r.english_topic || r.math_topic || "session logged",
   };

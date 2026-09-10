@@ -116,7 +116,7 @@ export default async function VolunteerDashboardPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-display text-xl font-semibold">
-          Welcome back, {user.name.split(" ")[0]}
+          Welcome back, {user.displayName.split(" ")[0]}
         </h1>
 
         <p className="text-sm text-muted-foreground">

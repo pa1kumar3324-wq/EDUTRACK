@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { VolunteerFormValues } from "@/lib/validations/roadmap";
+import { normalizeProfilePatch } from "@/lib/validations/volunteerProfile";
+import { displayName } from "@/lib/utils";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -21,9 +23,19 @@ export const volunteerRepository = {
   },
 
   async update(supabase: Client, id: string, values: Partial<VolunteerFormValues>) {
+    // Profile fields (preferred_name, bio, etc.) get their empty-string ->
+    // null normalization here; name/email/phone/role pass through as-is.
+    const { name, email, phone, role, ...profileFields } = values;
+    const payload = {
+      ...(name !== undefined ? { name } : {}),
+      ...(email !== undefined ? { email } : {}),
+      ...(phone !== undefined ? { phone: phone || null } : {}),
+      ...(role !== undefined ? { role } : {}),
+      ...normalizeProfilePatch(profileFields),
+    };
     const { data, error } = await supabase
       .from("volunteers")
-      .update(values)
+      .update(payload)
       .eq("id", id)
       .select()
       .single();
@@ -37,11 +49,11 @@ export const volunteerRepository = {
   },
 
   async studentsPerVolunteer(supabase: Client) {
-    const { data, error } = await supabase.from("assignments").select("volunteer_id, volunteers!assignments_volunteer_id_fkey(name)");
+    const { data, error } = await supabase.from("assignments").select("volunteer_id, volunteers!assignments_volunteer_id_fkey(name, preferred_name)");
     if (error) throw error;
     const counts = new Map<string, { name: string; count: number }>();
     for (const row of data ?? []) {
-      const name = row.volunteers?.name ?? "Unknown";
+      const name = row.volunteers ? displayName(row.volunteers) : "Unknown";
       const existing = counts.get(row.volunteer_id);
       counts.set(row.volunteer_id, { name, count: (existing?.count ?? 0) + 1 });
     }

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { displayName } from "@/lib/utils";
 import type {
   AdminStats,
   DashboardStats,
@@ -139,7 +140,7 @@ export const analyticsRepository = {
   /** Volunteers who haven't logged an update for any assigned student in `days`. */
   async pendingVolunteers(supabase: Client, days = 14) {
     const [{ data: volunteers }, { data: assignments }, { data: progressRows }] = await Promise.all([
-      supabase.from("volunteers").select("id, name").eq("role", "volunteer").eq("is_active", true),
+      supabase.from("volunteers").select("id, name, preferred_name").eq("role", "volunteer").eq("is_active", true),
       supabase.from("assignments").select("volunteer_id, student_id"),
       supabase.from("progress").select("volunteer_id, created_at"),
     ]);
@@ -159,7 +160,7 @@ export const analyticsRepository = {
       .map((v) => {
         const last = lastUpdateByVolunteer.get(v.id);
         const daysSince = last ? differenceInCalendarDays(new Date(), new Date(last)) : Infinity;
-        return { id: v.id, name: v.name, daysSinceUpdate: daysSince };
+        return { id: v.id, name: displayName(v), daysSinceUpdate: daysSince };
       })
       .filter((v) => v.daysSinceUpdate >= days);
   },

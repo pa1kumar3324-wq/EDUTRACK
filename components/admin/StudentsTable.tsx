@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, Plus, MoreVertical, Pencil, Trash2, UserPlus, Eye } from "lucide-react";
+import { Search, Plus, GraduationCap, Users, MoreVertical, UserPlus, Pencil, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -17,13 +16,33 @@ import { StudentFormDialog } from "@/components/admin/StudentFormDialog";
 import { AssignVolunteersDialog } from "@/components/admin/AssignVolunteersDialog";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useStudents } from "@/hooks/useStudents";
-import { initials, LEVEL_LABELS } from "@/lib/utils";
-import { Users } from "lucide-react";
+import { LEVEL_LABELS } from "@/lib/utils";
 import type { Student, Volunteer } from "@/lib/types/database";
 
 const LEVELS = ["beginner", "developing", "proficient", "advanced"];
 
-export function StudentsTable({ volunteers }: { volunteers: Volunteer[] }) {
+/**
+ * Generic, identical-for-every-student photo. Intentionally never uses
+ * student.photo_url or initials — see prompt item 4 ("a generic photo,
+ * identical for every student").
+ */
+function GenericStudentAvatar() {
+  return (
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      <GraduationCap className="h-5 w-5" />
+    </div>
+  );
+}
+
+export function StudentsTable({
+  volunteers,
+  assignedVolunteerNames,
+}: {
+  volunteers: Volunteer[];
+  /** studentId -> assigned volunteers' display names, fetched in bulk server-side (see admin/people/students/page.tsx). */
+  assignedVolunteerNames: Record<string, string[]>;
+}) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [grade, setGrade] = useState<string>("all");
   const [englishLevel, setEnglishLevel] = useState<string>("all");
@@ -116,112 +135,67 @@ export function StudentsTable({ volunteers }: { volunteers: Volunteer[] }) {
       ) : students.length === 0 ? (
         <EmptyState icon={Users} title="No students found" description="Try adjusting your search or filters, or add a new student." />
       ) : (
-        <>
-          {/* Mobile: card list — most volunteers use EduTrack on a phone */}
-          <div className="flex flex-col gap-3 md:hidden">
-            {students.map((student) => (
-              <div key={student.id} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 shadow-soft">
-                <Avatar className="h-11 w-11 shrink-0">
-                  <AvatarImage src={student.photo_url ?? undefined} alt={student.name} />
-                  <AvatarFallback>{initials(student.name)}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <Link href={`/students/${student.id}`} className="block truncate font-display font-semibold hover:underline">
-                    {student.name}
-                  </Link>
-                  <p className="truncate text-xs text-muted-foreground">
-                    Grade {student.grade} · Eng: {LEVEL_LABELS[student.english_level]} · Math: {LEVEL_LABELS[student.math_level]}
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label={`Actions for ${student.name}`}>
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/students/${student.id}`}><Eye className="h-4 w-4" /> View profile</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => openAssign(student)}>
-                      <UserPlus className="h-4 w-4" /> Assign volunteers
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setEditingStudent(student);
-                        setFormOpen(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" /> Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setDeleteTarget(student)} className="text-destructive focus:text-destructive">
-                      <Trash2 className="h-4 w-4" /> Remove
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop / tablet: full table */}
-          <Table className="hidden md:table">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Grade</TableHead>
-                <TableHead>English</TableHead>
-                <TableHead>Math</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {students.map((student) => (
-                <TableRow key={student.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={student.photo_url ?? undefined} alt={student.name} />
-                        <AvatarFallback className="text-xs">{initials(student.name)}</AvatarFallback>
-                      </Avatar>
-                      <Link href={`/students/${student.id}`} className="font-medium hover:underline">
-                        {student.name}
-                      </Link>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {students.map((student) => {
+            const assignedNames = assignedVolunteerNames[student.id] ?? [];
+            return (
+              <Card key={student.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <GenericStudentAvatar />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-display font-semibold">{student.name}</p>
+                      <p className="text-xs text-muted-foreground">Grade {student.grade}</p>
                     </div>
-                  </TableCell>
-                  <TableCell>Grade {student.grade}</TableCell>
-                  <TableCell className="capitalize">{LEVEL_LABELS[student.english_level]}</TableCell>
-                  <TableCell className="capitalize">{LEVEL_LABELS[student.math_level]}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/students/${student.id}`}><Eye className="h-4 w-4" /> View profile</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openAssign(student)}>
-                          <UserPlus className="h-4 w-4" /> Assign volunteers
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setEditingStudent(student);
-                            setFormOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeleteTarget(student)} className="text-destructive focus:text-destructive">
-                          <Trash2 className="h-4 w-4" /> Remove
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={`Actions for ${student.name}`}>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openAssign(student)}>
+                        <UserPlus className="h-4 w-4" /> Assign volunteers
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setEditingStudent(student);
+                          setFormOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDeleteTarget(student)} className="text-destructive focus:text-destructive">
+                        <Trash2 className="h-4 w-4" /> Remove
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="flex flex-wrap gap-3 text-xs">
+                  <span>
+                    <span className="text-muted-foreground">English: </span>
+                    <span className="capitalize">{LEVEL_LABELS[student.english_level]}</span>
+                  </span>
+                  <span>
+                    <span className="text-muted-foreground">Math: </span>
+                    <span className="capitalize">{LEVEL_LABELS[student.math_level]}</span>
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Volunteers assigned</p>
+                  {assignedNames.length > 0 ? (
+                    <p className="text-sm">{assignedNames.join(", ")}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">None assigned yet</p>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
       <StudentFormDialog open={formOpen} onOpenChange={setFormOpen} student={editingStudent} onSaved={refetch} />
@@ -231,7 +205,12 @@ export function StudentsTable({ volunteers }: { volunteers: Volunteer[] }) {
         student={assigningStudent}
         allVolunteers={volunteers}
         currentlyAssignedIds={assignedIds}
-        onSaved={refetch}
+        onSaved={() => {
+          refetch();
+          // assignedVolunteerNames is fetched server-side in the parent page,
+          // so refresh the server component to pick up the new assignment.
+          router.refresh();
+        }}
       />
       <ConfirmDialog
         open={!!deleteTarget}

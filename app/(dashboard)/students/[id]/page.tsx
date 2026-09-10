@@ -31,11 +31,11 @@ import { RoadmapPositionControl } from "@/components/student/RoadmapPositionCont
 import { StudentJourneyChart } from "@/components/charts/StudentJourneyChart";
 import { TsareenaFocusRegistrar } from "@/components/ai/TsareenaFocusRegistrar";
 import { buildRecentSessionSummaries, resolveSubjectExistingSuggestion } from "@/components/ai/TsareenaContext";
-import { initials, formatRelativeDate } from "@/lib/utils";
+import { initials, formatRelativeDate, displayName } from "@/lib/utils";
 import type { Student, Progress } from "@/lib/types/database";
 
 type HistoryRow = Progress & {
-  volunteers: { name: string } | null;
+  volunteers: { name: string; preferred_name: string | null } | null;
 };
 
 export default async function StudentProfilePage({
@@ -453,7 +453,7 @@ export default async function StudentProfilePage({
                     <p className="text-sm">{p.homework}</p>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {p.volunteers?.name ?? "Unknown"} ·{" "}
+                      {p.volunteers ? displayName(p.volunteers) : "Unknown"} ·{" "}
                       {formatRelativeDate(p.created_at)}
                     </p>
                   </div>
@@ -476,32 +476,35 @@ export default async function StudentProfilePage({
         (v: {
           id: string;
           name: string;
+          preferred_name: string | null;
           email: string;
           avatar_url: string | null;
         }) => (
-          <Card key={v.id}>
-            <CardContent className="flex items-center gap-3 p-4">
-              <Avatar className="h-10 w-10">
-                <AvatarImage
-                  src={v.avatar_url ?? undefined}
-                  alt={v.name}
-                />
-                <AvatarFallback>
-                  {initials(v.name)}
-                </AvatarFallback>
-              </Avatar>
+          <Link key={v.id} href={`/volunteers/${v.id}`} className="block rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
+            <Card className="transition-colors hover:bg-secondary/40">
+              <CardContent className="flex items-center gap-3 p-4">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage
+                    src={v.avatar_url ?? undefined}
+                    alt={displayName(v)}
+                  />
+                  <AvatarFallback>
+                    {initials(displayName(v))}
+                  </AvatarFallback>
+                </Avatar>
 
-              <div>
-                <p className="text-sm font-medium">
-                  {v.name}
-                </p>
+                <div>
+                  <p className="text-sm font-medium">
+                    {displayName(v)}
+                  </p>
 
-                <p className="text-xs text-muted-foreground">
-                  {v.email}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                  <p className="text-xs text-muted-foreground">
+                    {v.email}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         )
       )}
     </div>

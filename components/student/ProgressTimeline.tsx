@@ -1,16 +1,16 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { initials, formatRelativeDate } from "@/lib/utils";
+import { initials, formatRelativeDate, displayName } from "@/lib/utils";
 import type { Progress } from "@/lib/types/database";
 
-type HistoryRow = Progress & { volunteers: { name: string } | null };
+type HistoryRow = Progress & { volunteers: { name: string; preferred_name: string | null } | null };
 
 /** Vertical timeline of every progress entry, newest first. */
 export function ProgressTimeline({ history }: { history: HistoryRow[] }) {
   return (
     <ol className="relative flex flex-col gap-6 border-l border-border pl-6">
       {history.map((entry) => {
-        const volunteerName = entry.volunteers?.name ?? "Unknown volunteer";
+        const volunteerName = entry.volunteers ? displayName(entry.volunteers) : "Unknown volunteer";
         return (
           <li key={entry.id} className="relative">
             <span className="absolute -left-[31px] top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-background bg-primary" />

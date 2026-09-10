@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { initials, cn } from "@/lib/utils";
+import { initials, cn, displayName } from "@/lib/utils";
 import type { Volunteer, AttendanceStatus, Attendance } from "@/lib/types/database";
 
 const STATUS_OPTIONS: { value: AttendanceStatus; label: string; icon: typeof Check; className: string }[] = [
@@ -125,11 +125,11 @@ export function AttendanceMarker({ volunteers }: { volunteers: Volunteer[] }) {
                 <div key={v.id} className="flex flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={v.avatar_url ?? undefined} alt={v.name} />
-                      <AvatarFallback className="text-xs">{initials(v.name)}</AvatarFallback>
+                      <AvatarImage src={v.avatar_url ?? undefined} alt={displayName(v)} />
+                      <AvatarFallback className="text-xs">{initials(displayName(v))}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium">{v.name}</p>
+                      <p className="text-sm font-medium">{displayName(v)}</p>
                       <p className="text-xs text-muted-foreground">{v.email}</p>
                     </div>
                   </div>

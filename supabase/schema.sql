@@ -20,14 +20,23 @@ create type subject as enum ('english', 'math');
 -- so RLS can key off auth.uid() directly.
 -- ----------------------------------------------------------------------------
 create table volunteers (
-  id          uuid primary key references auth.users (id) on delete cascade,
-  name        text not null,
-  email       text not null unique,
-  phone       text,
-  role        user_role not null default 'volunteer',
-  avatar_url  text,
-  is_active   boolean not null default true,
-  created_at  timestamptz not null default now()
+  id                  uuid primary key references auth.users (id) on delete cascade,
+  name                text not null,
+  email               text not null unique,
+  phone               text,
+  role                user_role not null default 'volunteer',
+  avatar_url          text,
+  is_active           boolean not null default true,
+  -- Profile fields (see supabase/migrations/006_volunteer_profile_fields.sql
+  -- for the full rationale). `preferred_name` is the everyday display
+  -- identity (falls back to `name` — see displayName() in lib/utils.ts);
+  -- `name` stays the official/legal identity used for formal records.
+  preferred_name      text check (char_length(preferred_name) <= 100),
+  date_of_birth       date,
+  bio                 text check (char_length(bio) <= 1000),
+  teaching_interests  text check (char_length(teaching_interests) <= 500),
+  fun_fact            text check (char_length(fun_fact) <= 280),
+  created_at          timestamptz not null default now()
 );
 
 comment on table volunteers is 'Every user of the system: admins and volunteers alike, distinguished by role.';
@@ -142,11 +151,12 @@ for each row execute function touch_student_on_progress();
 -- (continuity, revision flags, staleness) lives in one place.
 -- ----------------------------------------------------------------------------
 
--- Latest progress row per student, with the volunteer's name resolved.
+-- Latest progress row per student, with the volunteer's display name
+-- resolved (preferred_name when set, else the official name).
 create or replace view latest_progress as
 select distinct on (p.student_id)
   p.*,
-  v.name as volunteer_name
+  coalesce(v.preferred_name, v.name) as volunteer_name
 from progress p
 join volunteers v on v.id = p.volunteer_id
 order by p.student_id, p.created_at desc;
@@ -397,3 +407,38 @@ create policy "student_roadmap_positions_select_all" on student_roadmap_position
 
 create policy "student_roadmap_positions_admin_write" on student_roadmap_positions for all
   using (is_admin()) with check (is_admin());
+
+-- ----------------------------------------------------------------------------
+-- SUPABASE STORAGE — volunteer profile photos
+-- Public-read bucket (profile photos aren't sensitive); writes are locked to
+-- the volunteer's own folder ("<volunteer_id>/<file>") or an admin. See
+-- supabase/migrations/006_volunteer_profile_fields.sql for the full
+-- rationale and components/profile/AvatarUploader.tsx for the client side.
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 2097152,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
+
+create policy "avatars_public_read" on storage.objects for select
+  using (bucket_id = 'avatars');
+
+create policy "avatars_owner_or_admin_insert" on storage.objects for insert
+  with check (
+    bucket_id = 'avatars'
+    and (is_admin() or (storage.foldername(name))[1] = auth.uid()::text)
+  );
+
+create policy "avatars_owner_or_admin_update" on storage.objects for update
+  using (
+    bucket_id = 'avatars'
+    and (is_admin() or (storage.foldername(name))[1] = auth.uid()::text)
+  );
+
+create policy "avatars_owner_or_admin_delete" on storage.objects for delete
+  using (
+    bucket_id = 'avatars'
+    and (is_admin() or (storage.foldername(name))[1] = auth.uid()::text)
+  );
