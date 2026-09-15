@@ -8,7 +8,7 @@ import { attendanceRepository } from "@/lib/repositories/attendanceRepository";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VolunteerProfileHeader } from "@/components/profile/VolunteerProfileHeader";
-import type { Volunteer } from "@/lib/types/database";
+import type { Volunteer, PublicVolunteer } from "@/lib/types/database";
 
 /** Formats a "YYYY-MM-DD" DOB as e.g. "June 14" — month/day only, never the year, so age is never implied. */
 function formatBirthday(dateOfBirth: string): string {
@@ -35,6 +35,25 @@ export default async function VolunteerProfilePage({ params }: { params: Promise
   const canEdit = isSelf || user.role === "admin";
   const canSeePrivateStats = isSelf || user.role === "admin";
 
+  // VolunteerProfileHeader is a Client Component, so whatever we pass it is
+  // serialized into the page payload sent to the browser — regardless of
+  // what the component chooses to render. Only ever hand it the full row
+  // (including phone/date_of_birth) when the viewer is genuinely allowed to
+  // see/edit it; everyone else gets the public projection only (H1).
+  const publicVolunteer: PublicVolunteer = {
+    id: volunteer.id,
+    name: volunteer.name,
+    preferred_name: volunteer.preferred_name,
+    email: volunteer.email,
+    avatar_url: volunteer.avatar_url,
+    role: volunteer.role,
+    is_active: volunteer.is_active,
+    bio: volunteer.bio,
+    teaching_interests: volunteer.teaching_interests,
+    fun_fact: volunteer.fun_fact,
+    created_at: volunteer.created_at,
+  };
+
   const { count: studentsAssigned } = await supabase
     .from("assignments")
     .select("id", { count: "exact", head: true })
@@ -54,7 +73,12 @@ export default async function VolunteerProfilePage({ params }: { params: Promise
 
       <Card>
         <CardContent className="pt-6">
-          <VolunteerProfileHeader initialVolunteer={volunteer} isSelf={isSelf} canEdit={canEdit} />
+          <VolunteerProfileHeader
+            publicVolunteer={publicVolunteer}
+            editableVolunteer={canEdit ? volunteer : null}
+            isSelf={isSelf}
+            canEdit={canEdit}
+          />
         </CardContent>
       </Card>
 

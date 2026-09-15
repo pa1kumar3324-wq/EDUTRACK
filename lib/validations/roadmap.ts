@@ -32,3 +32,21 @@ export const volunteerSchema = z.object({
 });
 
 export type VolunteerFormValues = z.infer<typeof volunteerSchema>;
+
+/**
+ * POST /api/volunteers (invite flow) intentionally accepts a smaller shape
+ * than volunteerSchema above — an invite only ever sets name/email/phone/
+ * role up front; the richer profile fields (bio, avatar, etc.) are always
+ * filled in later by the volunteer themself via /api/profile. Kept as its
+ * own schema (rather than volunteerSchema.pick(...)) so this validation
+ * doesn't silently drift if profile-only fields are ever added/removed
+ * from volunteerSchema.
+ */
+export const volunteerInviteSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().email("Enter a valid email address"),
+  phone: z.string().max(30).optional().or(z.literal("")),
+  role: z.enum(["admin", "volunteer"]).optional(),
+});
+
+export type VolunteerInviteValues = z.infer<typeof volunteerInviteSchema>;

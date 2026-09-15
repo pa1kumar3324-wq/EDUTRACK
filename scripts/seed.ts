@@ -10,6 +10,7 @@
  * Run with: npm run seed
  */
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { faker } from "@faker-js/faker";
 
@@ -22,6 +23,30 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
   );
   process.exit(1);
 }
+
+// Guard rails (M7): this script creates real Supabase Auth users with a
+// known password and writes sample data. Two safeguards against running it
+// against a project that isn't an empty scratch project:
+//  1. Requires an explicit `--confirm-seed` flag — `npm run seed` alone
+//     (with no args) refuses and prints instructions, so it can't be run
+//     by muscle memory against the wrong SUPABASE_URL.
+//  2. Refuses if the target project already has ANY volunteers — a fresh
+//     project is the only thing this script is meant to run against; a
+//     project with existing real volunteers is never safe to reseed with
+//     sample accounts sharing one password.
+if (!process.argv.includes("--confirm-seed")) {
+  console.error(
+    "Refusing to run: this creates real Supabase Auth users and sample data.\n" +
+      "If you're sure this is an empty scratch project, run:\n" +
+      "  npm run seed -- --confirm-seed"
+  );
+  process.exit(1);
+}
+
+// One random password for this run, shared by all seeded accounts so a
+// human can actually use them to log in and explore the seeded data —
+// printed once at the end, never hardcoded, never logged more than once.
+const SEED_PASSWORD = randomBytes(9).toString("base64url");
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -75,6 +100,22 @@ async function seedRoadmap() {
 
 async function seedVolunteers() {
   console.log("Seeding volunteers (creates real Supabase Auth users)...");
+
+  const { count, error: countError } = await supabase
+    .from("volunteers")
+    .select("id", { count: "exact", head: true });
+  if (countError) {
+    console.error("Could not check for existing volunteers:", countError.message);
+    process.exit(1);
+  }
+  if (count && count > 0) {
+    console.error(
+      `Refusing to run: this project already has ${count} volunteer(s). ` +
+        "This script is only safe to run against an empty scratch project."
+    );
+    process.exit(1);
+  }
+
   const volunteerIds: string[] = [];
 
   const seedUsers = [
@@ -89,7 +130,7 @@ async function seedVolunteers() {
   for (const u of seedUsers) {
     const { data, error } = await supabase.auth.admin.createUser({
       email: u.email,
-      password: "EduTrack123!",
+      password: SEED_PASSWORD,
       email_confirm: true,
       user_metadata: { name: u.name },
     });
@@ -102,7 +143,7 @@ async function seedVolunteers() {
     volunteerIds.push(data.user.id);
   }
 
-  console.log(`  ${volunteerIds.length} volunteers seeded. Login password for all: EduTrack123!`);
+  console.log(`  ${volunteerIds.length} volunteers seeded.`);
   return volunteerIds;
 }
 
@@ -226,8 +267,9 @@ async function main() {
   await seedAttendance(volunteerIds);
 
   console.log("\nSeed complete.");
-  console.log("Admin login: admin@edutrack.dev / EduTrack123!");
-  console.log("All other seeded volunteers share the password: EduTrack123!");
+  console.log(`Admin login: admin@edutrack.dev / ${SEED_PASSWORD}`);
+  console.log(`All other seeded volunteers share the password: ${SEED_PASSWORD}`);
+  console.log("(This password was generated for this run only and is not stored anywhere — save it now.)");
 }
 
 main().catch((err) => {

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { VolunteerFormValues } from "@/lib/validations/roadmap";
 import { normalizeProfilePatch } from "@/lib/validations/volunteerProfile";
 import { displayName } from "@/lib/utils";
+import { PUBLIC_VOLUNTEER_COLUMNS, type PublicVolunteer } from "@/lib/types/database";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -14,6 +15,21 @@ export const volunteerRepository = {
       .order("name");
     if (error) throw error;
     return data ?? [];
+  },
+
+  /**
+   * Public projection — excludes `phone`/`date_of_birth` (see
+   * `PublicVolunteer`). Use this for any caller that doesn't specifically
+   * need the full row for an admin-gated view (H1).
+   */
+  async listPublic(supabase: Client): Promise<PublicVolunteer[]> {
+    const { data, error } = await supabase
+      .from("volunteers")
+      .select(PUBLIC_VOLUNTEER_COLUMNS)
+      .eq("is_active", true)
+      .order("name");
+    if (error) throw error;
+    return (data ?? []) as unknown as PublicVolunteer[];
   },
 
   async getById(supabase: Client, id: string) {

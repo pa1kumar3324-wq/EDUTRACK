@@ -286,6 +286,11 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
               placeholder="Anything the next volunteer should know — attention span today, what helped, what didn't..."
               {...register("notes")}
             />
+            <p className="text-xs text-muted-foreground">
+              May be shown to Tsareena (EduTrack&apos;s AI assistant) — only this student&apos;s own name is
+              automatically removed before that happens, so avoid naming siblings, guardians, or other
+              students here.
+            </p>
           </div>
         </CardContent>
       </Card>

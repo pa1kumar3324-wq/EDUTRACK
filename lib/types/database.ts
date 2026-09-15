@@ -38,6 +38,32 @@ export type Volunteer = {
   created_at: string;
 };
 
+/**
+ * The subset of a volunteer's fields that are safe to expose to any other
+ * authenticated (non-admin) user. Deliberately excludes `phone` and
+ * `date_of_birth` — migration 006 documents these as visible only to the
+ * volunteer themself or an admin. `email`, `bio`, `teaching_interests`, and
+ * `fun_fact` are intentionally team-visible per the volunteer profile
+ * page's design. See H1 in the remediation notes for the paths this closes.
+ */
+export type PublicVolunteer = Pick<
+  Volunteer,
+  | "id"
+  | "name"
+  | "preferred_name"
+  | "email"
+  | "avatar_url"
+  | "role"
+  | "is_active"
+  | "bio"
+  | "teaching_interests"
+  | "fun_fact"
+  | "created_at"
+>;
+
+export const PUBLIC_VOLUNTEER_COLUMNS =
+  "id, name, preferred_name, email, avatar_url, role, is_active, bio, teaching_interests, fun_fact, created_at";
+
 export type Student = {
   id: string;
   name: string;

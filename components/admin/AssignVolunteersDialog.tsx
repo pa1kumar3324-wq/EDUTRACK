@@ -50,28 +50,51 @@ export function AssignVolunteersDialog({
     const toAdd = [...selected].filter((id) => !currentlyAssignedIds.includes(id));
     const toRemove = currentlyAssignedIds.filter((id) => !selected.has(id));
 
+    // `fetch()` only rejects on network-level failure — it resolves
+    // normally with a non-ok Response for HTTP 4xx/5xx. Promise.all would
+    // therefore report success even when a change failed server-side, so
+    // each request is checked individually with allSettled and any
+    // non-ok/rejected result is surfaced by volunteer name instead of an
+    // all-or-nothing toast.
+    const volunteerNameById = new Map(allVolunteers.map((v) => [v.id, displayName(v)]));
+    const jobs = [
+      ...toAdd.map((volunteerId) => ({ volunteerId, method: "POST" as const })),
+      ...toRemove.map((volunteerId) => ({ volunteerId, method: "DELETE" as const })),
+    ];
+
     try {
-      await Promise.all([
-        ...toAdd.map((volunteerId) =>
-          fetch("/api/assignments", {
-            method: "POST",
+      const results = await Promise.allSettled(
+        jobs.map(async (job) => {
+          const res = await fetch("/api/assignments", {
+            method: job.method,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ studentId: student.id, volunteerId }),
-          })
-        ),
-        ...toRemove.map((volunteerId) =>
-          fetch("/api/assignments", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ studentId: student.id, volunteerId }),
-          })
-        ),
-      ]);
-      toast.success("Assignments updated");
-      onOpenChange(false);
+            body: JSON.stringify({ studentId: student.id, volunteerId: job.volunteerId }),
+          });
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error ?? "Request failed");
+          }
+        })
+      );
+
+      const failures = results
+        // Non-null: `results` comes from `Promise.allSettled(jobs.map(...))`,
+        // which always preserves the input array's length and order.
+        .map((result, i) => ({ result, job: jobs[i]! }))
+        .filter(({ result }) => result.status === "rejected");
+
+      if (failures.length === 0) {
+        toast.success("Assignments updated");
+        onOpenChange(false);
+      } else {
+        const names = failures
+          .map(({ job }) => volunteerNameById.get(job.volunteerId) ?? "a volunteer")
+          .join(", ");
+        toast.error(`Failed to update: ${names}`, {
+          description: "Other changes were saved — reopen this dialog to retry the failed ones.",
+        });
+      }
       onSaved();
-    } catch {
-      toast.error("Failed to update assignments");
     } finally {
       setIsSaving(false);
     }

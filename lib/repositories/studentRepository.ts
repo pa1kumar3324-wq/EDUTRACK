@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Student } from "@/lib/types/database";
 import type { StudentFormValues } from "@/lib/validations/student";
+import { ApiError } from "@/lib/api/errors";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -38,7 +39,10 @@ export const studentRepository = {
 
   async getById(supabase: Client, id: string) {
     const { data, error } = await supabase.from("students").select("*").eq("id", id).single();
-    if (error) throw error;
+    if (error) {
+      if (error.code === "PGRST116") throw new ApiError(404, "Student not found");
+      throw error;
+    }
     return data;
   },
 

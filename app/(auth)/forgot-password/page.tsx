@@ -33,6 +33,22 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
+
+    // M6: pre-flight rate-limit check — see app/api/auth/rate-limit-check
+    // for why this exists (resetPasswordForEmail below talks directly to
+    // Supabase, which our own server never sees).
+    const rateLimitRes = await fetch("/api/auth/rate-limit-check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "forgot-password" }),
+    });
+    if (!rateLimitRes.ok) {
+      const { error: rateLimitError } = await rateLimitRes.json().catch(() => ({ error: "Too many attempts" }));
+      setIsLoading(false);
+      toast.error("Too many attempts", { description: rateLimitError });
+      return;
+    }
+
     const supabase = createClient();
 
     const redirectTo = `${window.location.origin}/api/auth/callback?next=${encodeURIComponent("/reset-password")}`;

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminApi } from "@/lib/api/requireAuth";
+import { apiError } from "@/lib/api/errors";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { dateStringSchema } from "@/lib/validations/dateString";
 import Papa from "papaparse";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 /**
  * GET /api/export?format=csv|xlsx|json&type=students|progress|attendance&view=summary|detailed — admin only.
@@ -25,7 +28,25 @@ import * as XLSX from "xlsx";
  * JSON `{ empty: true, message }` payload instead of a file.
  */
 export async function GET(request: Request) {
-  await requireAdmin();
+  try {
+    // Rate limited (M6): exports run unbounded queries (up to 1000 rows) and
+    // generate files server-side — 10 requests/minute per IP is generous
+    // for a human clicking "Export" but blunts a scripted hammering loop.
+    const { allowed, retryAfterSeconds } = checkRateLimit(`export:${getClientIp(request)}`, 10, 60_000);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please slow down." },
+        { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
+      );
+    }
+    return await handleExport(request);
+  } catch (error) {
+    return apiError(error);
+  }
+}
+
+async function handleExport(request: Request) {
+  await requireAdminApi();
   const supabase = await createClient();
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format") ?? "csv";
@@ -33,6 +54,15 @@ export async function GET(request: Request) {
   const attendanceView = searchParams.get("view") === "detailed" ? "detailed" : "summary";
   const from = searchParams.get("from") || undefined;
   const to = searchParams.get("to") || undefined;
+
+  for (const [label, value] of [["from", from], ["to", to]] as const) {
+    if (value !== undefined) {
+      const parsed = dateStringSchema.safeParse(value);
+      if (!parsed.success) {
+        return NextResponse.json({ error: `Invalid '${label}' date` }, { status: 400 });
+      }
+    }
+  }
 
   if (type === "attendance" && (!from || !to)) {
     return NextResponse.json(
@@ -52,7 +82,7 @@ export async function GET(request: Request) {
       .from("students")
       .select("name, grade, english_level, math_level, is_active, created_at")
       .order("name");
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
     rows = (data ?? []).map((s) => ({
       Name: s.name,
       Grade: s.grade,
@@ -74,7 +104,7 @@ export async function GET(request: Request) {
       .select("volunteer_id, session_date, status")
       .gte("session_date", from!)
       .lte("session_date", to!);
-    if (recordsError) return NextResponse.json({ error: recordsError.message }, { status: 500 });
+    if (recordsError) throw recordsError;
 
     // Unique session dates that actually have an attendance entry, sorted chronologically.
     const dates = Array.from(new Set((records ?? []).map((r) => r.session_date))).sort();
@@ -92,7 +122,7 @@ export async function GET(request: Request) {
         .select("id, name")
         .eq("is_active", true)
         .order("name");
-      if (volunteersError) return NextResponse.json({ error: volunteersError.message }, { status: 500 });
+      if (volunteersError) throw volunteersError;
 
       if (attendanceView === "summary") {
         // One row per volunteer: the count of records actually marked
@@ -141,7 +171,7 @@ export async function GET(request: Request) {
       .select("created_at, english_topic, english_status, math_topic, math_status, homework, students(name), volunteers(name)")
       .order("created_at", { ascending: false })
       .limit(1000);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
     rows = (data ?? []).map((row) => ({
       Date: new Date(row.created_at).toLocaleDateString(),
       Student: row.students?.name ?? "",
@@ -177,11 +207,17 @@ export async function GET(request: Request) {
   }
 
   if (format === "xlsx") {
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, type === "students" ? "Students" : type === "attendance" ? "Attendance" : "Progress");
-    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-    return new NextResponse(buffer, {
+    const workbook = new ExcelJS.Workbook();
+    const sheetName = type === "students" ? "Students" : type === "attendance" ? "Attendance" : "Progress";
+    const worksheet = workbook.addWorksheet(sheetName);
+    const [firstRow] = rows;
+    if (firstRow) {
+      const columns = Object.keys(firstRow);
+      worksheet.columns = columns.map((key) => ({ header: key, key }));
+      worksheet.addRows(rows);
+    }
+    const buffer = await workbook.xlsx.writeBuffer();
+    return new NextResponse(Buffer.from(buffer), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${filename}.xlsx"`,

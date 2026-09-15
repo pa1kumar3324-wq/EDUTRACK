@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireAdminApi, requireUserApi } from "@/lib/api/requireAuth";
+import { apiError } from "@/lib/api/errors";
 import {
   roadmapPositionSchema,
   roadmapPositionSubjectQuerySchema,
@@ -22,22 +23,22 @@ import { studentRoadmapPositionRepository } from "@/lib/repositories/studentRoad
  * it via the normal automatic engine.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
-  const { id } = await params;
-  const supabase = await createClient();
-  const { searchParams } = new URL(request.url);
-
-  const parsed = roadmapPositionSubjectQuerySchema.safeParse({
-    subject: searchParams.get("subject"),
-  });
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "A valid 'subject' query param (english|math) is required" },
-      { status: 400 }
-    );
-  }
-
   try {
+    await requireUserApi();
+    const { id } = await params;
+    const supabase = await createClient();
+    const { searchParams } = new URL(request.url);
+
+    const parsed = roadmapPositionSubjectQuerySchema.safeParse({
+      subject: searchParams.get("subject"),
+    });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? "A valid 'subject' query param (english|math) is required" },
+        { status: 400 }
+      );
+    }
+
     const position = await studentRoadmapPositionRepository.getForStudentSubject(
       supabase,
       id,
@@ -45,7 +46,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     );
     return NextResponse.json({ position });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
@@ -59,18 +60,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
  * a pointer into `learning_roadmap`.
  */
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin();
-  const { id } = await params;
-  const supabase = await createClient();
-  const body = await request.json().catch(() => null);
-
-  const parsed = roadmapPositionSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
-  }
-  const { subject, roadmap_id } = parsed.data;
-
   try {
+    const admin = await requireAdminApi();
+    const { id } = await params;
+    const supabase = await createClient();
+    const body = await request.json().catch(() => null);
+
+    const parsed = roadmapPositionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+    }
+    const { subject, roadmap_id } = parsed.data;
+
     let student;
     try {
       student = await studentRepository.getById(supabase, id);
@@ -105,7 +106,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json({ position }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
@@ -116,25 +117,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
  * touch `progress` history.
  */
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
-  const { id } = await params;
-  const supabase = await createClient();
-  const { searchParams } = new URL(request.url);
-
-  const parsed = roadmapPositionSubjectQuerySchema.safeParse({
-    subject: searchParams.get("subject"),
-  });
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "A valid 'subject' query param (english|math) is required" },
-      { status: 400 }
-    );
-  }
-
   try {
+    await requireAdminApi();
+    const { id } = await params;
+    const supabase = await createClient();
+    const { searchParams } = new URL(request.url);
+
+    const parsed = roadmapPositionSubjectQuerySchema.safeParse({
+      subject: searchParams.get("subject"),
+    });
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? "A valid 'subject' query param (english|math) is required" },
+        { status: 400 }
+      );
+    }
+
     await studentRoadmapPositionRepository.clear(supabase, id, parsed.data.subject);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

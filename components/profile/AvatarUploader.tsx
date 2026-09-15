@@ -11,6 +11,21 @@ import { initials } from "@/lib/utils";
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024; // 2 MB — matches the bucket's file_size_limit
 const MAX_DIMENSION = 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const AVATARS_BUCKET_PUBLIC_PREFIX = "/storage/v1/object/public/avatars/";
+
+/**
+ * Extracts the storage object path (e.g. "<volunteerId>/169...webp") from a
+ * Supabase Storage public URL, so it can be passed to `.remove()`. Returns
+ * null for anything that isn't actually one of our own avatars bucket URLs
+ * (e.g. a dicebear fallback URL, or already null) — nothing to delete in
+ * that case.
+ */
+function avatarStoragePathFromUrl(url: string | null): string | null {
+  if (!url) return null;
+  const idx = url.indexOf(AVATARS_BUCKET_PUBLIC_PREFIX);
+  if (idx === -1) return null;
+  return url.slice(idx + AVATARS_BUCKET_PUBLIC_PREFIX.length);
+}
 
 /** Resizes/re-encodes an image client-side so uploads land near the ~300–500KB target without a server-side image pipeline. */
 async function compressImage(file: File): Promise<Blob> {
@@ -78,6 +93,16 @@ export function AvatarUploader({
 
       const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const url = publicUrlData.publicUrl;
+
+      // L8: delete the previous object now that the new one has uploaded
+      // successfully, so old avatar blobs don't accumulate indefinitely.
+      // Best-effort — a failed cleanup shouldn't fail the upload the user
+      // is actively waiting on.
+      const previousPath = avatarStoragePathFromUrl(preview);
+      if (previousPath) {
+        void supabase.storage.from("avatars").remove([previousPath]);
+      }
+
       setPreview(url);
       await onUploaded(url);
       toast.success("Photo updated");
@@ -91,8 +116,15 @@ export function AvatarUploader({
   async function handleRemove() {
     setIsBusy(true);
     try {
+      // L8: also delete the object from Storage, not just clear the DB
+      // column — best-effort, same reasoning as above.
+      const previousPath = avatarStoragePathFromUrl(preview);
+      const supabase = createClient();
       setPreview(null);
       await onUploaded(null);
+      if (previousPath) {
+        void supabase.storage.from("avatars").remove([previousPath]);
+      }
       toast.success("Photo removed");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to remove photo");

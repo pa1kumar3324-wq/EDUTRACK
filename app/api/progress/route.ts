@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireUserApi } from "@/lib/api/requireAuth";
+import { apiError } from "@/lib/api/errors";
 import { progressSchema } from "@/lib/validations/progress";
 import { progressRepository } from "@/lib/repositories/progressRepository";
 import { roadmapRepository } from "@/lib/repositories/roadmapRepository";
@@ -35,22 +37,18 @@ import { heuristicSuggestion } from "@/lib/utils/suggestionEngine";
  * students assigned to them; admins bypass that check.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
-  const body = await request.json();
-  const parsed = progressSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
-  }
-
-  const values = parsed.data;
-
   try {
+    const user = await requireUserApi();
+    const supabase = await createClient();
+
+    const body = await request.json();
+    const parsed = progressSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+    }
+
+    const values = parsed.data;
+
     const student = await studentRepository.getById(supabase, values.student_id);
     const [roadmap, history] = await Promise.all([
       roadmapRepository.listByGrade(supabase, student.grade),
@@ -156,7 +154,6 @@ export async function POST(request: Request) {
       suggestedNextLesson,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to save progress";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError(error);
   }
 }

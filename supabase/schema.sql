@@ -228,7 +228,8 @@ as $$
 $$;
 
 -- volunteers table
-create policy "volunteers_select_all" on volunteers for select using (true);
+create policy "volunteers_select_all" on volunteers for select
+  using (auth.role() = 'authenticated');
 create policy "volunteers_admin_write" on volunteers for all
   using (is_admin()) with check (is_admin());
 create policy "volunteers_self_update" on volunteers for update

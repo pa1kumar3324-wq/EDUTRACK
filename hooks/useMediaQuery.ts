@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+function subscribe(query: string, onChange: () => void) {
+  const mql = window.matchMedia(query);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
+}
 
 /** SSR-safe media query hook. Returns false on the server/first client render, then updates after mount. */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const mql = window.matchMedia(query);
-    setMatches(mql.matches);
-    const listener = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mql.addEventListener("change", listener);
-    return () => mql.removeEventListener("change", listener);
-  }, [query]);
-
-  return matches;
+  return useSyncExternalStore(
+    (onChange) => subscribe(query, onChange),
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
 }
 
 /** Matches Tailwind's `md` breakpoint (768px) — below this, use Tsareena's mobile presentation. */

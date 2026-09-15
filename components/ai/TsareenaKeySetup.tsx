@@ -123,8 +123,10 @@ export function TsareenaKeySetup({ status, currentKeyMasked, onConnect, onForget
         Get a Gemini API key <ExternalLink className="h-3 w-3" />
       </a>
       <p className="text-xs text-muted-foreground">
-        Your questions are sent directly to Gemini using the key you provide. EduTrack does not store your personal
-        Gemini API key. Gemini processes requests under Google's own applicable policies.
+        Your questions — along with the current student&apos;s progress notes, session observations, and
+        roadmap context (with the student&apos;s name removed) — are sent directly to Gemini using the key you
+        provide. EduTrack does not store your personal Gemini API key. Gemini processes requests under Google&apos;s
+        own applicable policies.
       </p>
     </div>
   );

@@ -6,7 +6,7 @@ const PUBLIC_PATHS = ["/login", "/forgot-password"];
 
 /**
  * Refreshes the Supabase auth session on every request and redirects
- * unauthenticated users away from protected routes. Wired up in middleware.ts.
+ * unauthenticated users away from protected routes. Wired up in proxy.ts.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

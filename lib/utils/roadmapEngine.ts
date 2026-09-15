@@ -5,6 +5,17 @@ export interface NextLessonRecommendation {
   topic: string;
   reason: string;
   isRevision: boolean;
+  /**
+   * True when the last-taught topic's text/roadmap_id doesn't match any
+   * *current* roadmap entry (e.g. it was renamed or removed after being
+   * taught) — the returned `topic` is the roadmap's first entry as a
+   * fallback, not a genuine "back to the start" recommendation. Callers
+   * that display this to a human should surface it distinctly (e.g. "roadmap
+   * mismatch — please confirm") rather than presenting it as a normal
+   * recommendation, since silently treating it as one would look like the
+   * student's progress was discarded.
+   */
+  roadmapMismatch?: boolean;
 }
 
 export interface RoadmapPosition extends NextLessonRecommendation {
@@ -92,7 +103,25 @@ export function recommendNextTopic(
     );
   }
 
-  const next = currentIndex >= 0 ? subjectRoadmap[currentIndex + 1] : subjectRoadmap[0];
+  // The last-taught topic doesn't match any CURRENT roadmap entry (renamed
+  // or removed since it was taught) — this is different from "nothing
+  // taught yet" (handled above via the `!lastEntry` branch) and must not be
+  // presented the same way. Flag it explicitly (L4) instead of silently
+  // falling through to "recommend the first topic", which would look
+  // exactly like the student is starting over.
+  if (currentIndex === -1) {
+    // Non-null: `subjectRoadmap.length === 0` returned above, so index 0 exists.
+    const first = subjectRoadmap[0]!;
+    return {
+      subject,
+      topic: first.topic,
+      reason: `Last recorded topic "${lastTopic}" no longer matches this grade's roadmap (it may have been renamed or removed) — showing the first roadmap topic as a fallback. Please confirm the student's actual position.`,
+      isRevision: false,
+      roadmapMismatch: true,
+    };
+  }
+
+  const next = subjectRoadmap[currentIndex + 1];
 
   if (!next) {
     return {
@@ -229,6 +258,19 @@ export function resolveRoadmapPosition(
   }
 
   const baselineIndex = subjectRoadmap.findIndex((r) => r.id === baselineValid.id);
+
+  // L5: `baselineIndex` should be unreachable as -1 given how callers build
+  // `roadmap` (the baseline is validated as belonging to this grade/subject
+  // above), but that wasn't explicitly guarded — without this check,
+  // `automaticIndex >= baselineIndex` would be trivially true for ANY
+  // `automaticIndex` (including -1) purely by comparison-arithmetic
+  // coincidence, not because the code intentionally decided "automatic
+  // wins". Treat a not-found baseline the same as "no valid baseline".
+  if (baselineIndex === -1) {
+    if (!automatic) return null;
+    return { ...automatic, source: "automatic", roadmapEntryId: automaticEntry?.id ?? null };
+  }
+
   const automaticIndex = automaticEntry ? subjectRoadmap.findIndex((r) => r.id === automaticEntry.id) : -1;
 
   // Progress has caught up to (or moved past) the baseline — including a

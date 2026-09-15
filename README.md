@@ -104,11 +104,11 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000         # canonical URL of this deplo
 
 ### 5. Seed sample data (optional but recommended)
 ```bash
-npm run seed
+npm run seed -- --confirm-seed
 ```
-This creates 10 volunteers (1 admin, real Supabase Auth accounts), 25 students, assignments, a full Grade 1–10 English/Math roadmap, and several weeks of realistic progress history — enough for every dashboard, chart, and empty state to look real immediately.
+This creates 10 volunteers (1 admin, real Supabase Auth accounts), 25 students, assignments, a full Grade 1–10 English/Math roadmap, and several weeks of realistic progress history — enough for every dashboard, chart, and empty state to look real immediately. It refuses to run without `--confirm-seed`, and refuses to run at all against a project that already has any volunteers in it — it's only meant for an empty scratch project.
 
-All seeded accounts share the password `EduTrack123!`. The admin account is `admin@edutrack.dev`.
+All seeded accounts share one password, randomly generated fresh for that run and printed once at the end — save it from the script's output. The admin account is `admin@edutrack.dev`.
 
 ### 6. Run the dev server
 ```bash
@@ -154,7 +154,7 @@ A database trigger (`handle_new_auth_user`) automatically creates their `volunte
 
 ### Post-deploy checklist
 - [ ] Confirm `students_needing_revision` and `latest_progress` views exist (`select * from latest_progress limit 1;` in the SQL editor)
-- [ ] Invite your first real admin from the Supabase dashboard, or seed with `npm run seed` against production (only do this on a fresh project — it creates real auth users)
+- [ ] Invite your first real admin from the Supabase dashboard, or seed with `npm run seed -- --confirm-seed` against production (only do this on a fresh project — it creates real auth users, and the script itself refuses to run against a project that already has volunteers)
 - [ ] Verify RLS is enabled on all six tables (`schema.sql` does this, but double-check under **Authentication → Policies**)
 - [ ] Set up Supabase's daily backups (Free tier: manual export; Pro tier: automatic)
 

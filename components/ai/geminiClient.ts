@@ -13,7 +13,7 @@ import { TSAREENA_SYSTEM_PROMPT } from "@/components/ai/TsareenaPrompt";
  * useGeminiKey() and never leaves the client.
  */
 
-export const TSAREENA_MODEL = "gemini-3.6-flash";
+export const TSAREENA_MODEL = "gemini-3.8-flash";
 
 export type GeminiTurn = { role: "user" | "model"; text: string };
 
@@ -53,7 +53,7 @@ export async function validateGeminiKey(apiKey: string): Promise<void> {
     const response = await ai.models.generateContent({
       model: TSAREENA_MODEL,
       contents: "Reply with the single word: ready",
-      // 10 was too tight — gemini-3.6-flash can spend a few tokens on
+      // 10 was too tight — gemini-3.8-flash can spend a few tokens on
       // leading formatting before the actual word, which hit MAX_TOKENS
       // and came back with empty content, failing validation on a valid key.
       config: { maxOutputTokens: 40 },

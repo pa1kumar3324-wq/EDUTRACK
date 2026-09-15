@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireAdminApi, requireUserApi } from "@/lib/api/requireAuth";
+import { apiError } from "@/lib/api/errors";
 import { attendanceSchema, bulkAttendanceSchema } from "@/lib/validations/attendance";
+import { dateStringSchema } from "@/lib/validations/dateString";
 import { attendanceRepository } from "@/lib/repositories/attendanceRepository";
 
 /**
@@ -10,15 +12,24 @@ import { attendanceRepository } from "@/lib/repositories/attendanceRepository";
  * GET /api/attendance?from=&to=                     — admin only, everyone (used by export)
  */
 export async function GET(request: Request) {
-  const user = await requireUser();
-  const supabase = await createClient();
-  const { searchParams } = new URL(request.url);
-  const date = searchParams.get("date");
-  const volunteerId = searchParams.get("volunteerId");
-  const from = searchParams.get("from") ?? undefined;
-  const to = searchParams.get("to") ?? undefined;
-
   try {
+    const user = await requireUserApi();
+    const supabase = await createClient();
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get("date");
+    const volunteerId = searchParams.get("volunteerId");
+    const from = searchParams.get("from") ?? undefined;
+    const to = searchParams.get("to") ?? undefined;
+
+    for (const [label, value] of [["date", date], ["from", from], ["to", to]] as const) {
+      if (value !== null && value !== undefined) {
+        const parsed = dateStringSchema.safeParse(value);
+        if (!parsed.success) {
+          return NextResponse.json({ error: `Invalid '${label}' date` }, { status: 400 });
+        }
+      }
+    }
+
     if (date) {
       if (user.role !== "admin") return NextResponse.json({ error: "Admins only" }, { status: 403 });
       const records = await attendanceRepository.listForDate(supabase, date);
@@ -37,7 +48,7 @@ export async function GET(request: Request) {
     const records = await attendanceRepository.listAll(supabase, { from, to });
     return NextResponse.json({ records });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }
 
@@ -46,11 +57,11 @@ export async function GET(request: Request) {
  * or several at once (bulkAttendanceSchema, when `volunteer_ids` is present).
  */
 export async function POST(request: Request) {
-  const admin = await requireAdmin();
-  const supabase = await createClient();
-  const body = await request.json();
-
   try {
+    const admin = await requireAdminApi();
+    const supabase = await createClient();
+    const body = await request.json();
+
     if (Array.isArray(body.volunteer_ids)) {
       const parsed = bulkAttendanceSchema.safeParse(body);
       if (!parsed.success) {
@@ -67,6 +78,6 @@ export async function POST(request: Request) {
     const record = await attendanceRepository.mark(supabase, parsed.data, admin.id);
     return NextResponse.json({ record }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return apiError(error);
   }
 }

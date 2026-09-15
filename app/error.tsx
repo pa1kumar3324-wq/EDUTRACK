@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const router = useRouter();
+
   useEffect(() => {
     // In production this is where an error-tracking call would go (e.g. Sentry).
     console.error("Route error boundary caught:", error);
@@ -23,7 +26,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         {error.digest && <p className="text-xs text-muted-foreground/70">Reference: {error.digest}</p>}
       </div>
       <div className="flex gap-2">
-        <Button variant="outline" onClick={() => (window.location.href = "/dashboard")}>
+        <Button variant="outline" onClick={() => router.push("/dashboard")}>
           Go to dashboard
         </Button>
         <Button onClick={() => reset()}>

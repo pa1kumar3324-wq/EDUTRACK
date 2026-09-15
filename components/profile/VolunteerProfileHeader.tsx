@@ -8,23 +8,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VolunteerProfileEditor } from "@/components/profile/VolunteerProfileEditor";
 import { displayName, initials } from "@/lib/utils";
-import type { Volunteer } from "@/lib/types/database";
+import type { Volunteer, PublicVolunteer } from "@/lib/types/database";
 
 export function VolunteerProfileHeader({
-  initialVolunteer,
+  publicVolunteer,
+  editableVolunteer,
   isSelf,
   canEdit,
 }: {
-  initialVolunteer: Volunteer;
+  publicVolunteer: PublicVolunteer;
+  /** Full row, including phone/date_of_birth — only ever passed non-null
+   * when `canEdit` is true (self or admin). Never widen this to be passed
+   * unconditionally; see H1. */
+  editableVolunteer: Volunteer | null;
   isSelf: boolean;
   canEdit: boolean;
 }) {
   const router = useRouter();
-  const [volunteer, setVolunteer] = useState(initialVolunteer);
+  const [volunteer, setVolunteer] = useState<PublicVolunteer>(publicVolunteer);
+  const [editableSnapshot, setEditableSnapshot] = useState<Volunteer | null>(editableVolunteer);
   const [editOpen, setEditOpen] = useState(false);
   const [hintSeen, setHintSeen] = useState(true);
 
-  const hintStorageKey = `edutrack:profile-hint-seen:${initialVolunteer.id}`;
+  const hintStorageKey = `edutrack:profile-hint-seen:${publicVolunteer.id}`;
 
   useEffect(() => {
     if (!isSelf) return;
@@ -59,7 +65,7 @@ export function VolunteerProfileHeader({
         <p className="text-sm text-muted-foreground">{volunteer.email}</p>
       </div>
 
-      {canEdit && (
+      {canEdit && editableSnapshot && (
         <>
           <div className="flex items-center gap-1.5">
             <Button
@@ -77,12 +83,13 @@ export function VolunteerProfileHeader({
             )}
           </div>
           <VolunteerProfileEditor
-            volunteer={volunteer}
+            volunteer={editableSnapshot}
             isSelf={isSelf}
             open={editOpen}
             onOpenChange={setEditOpen}
             onSaved={(updated) => {
               setVolunteer(updated);
+              setEditableSnapshot(updated);
               router.refresh();
             }}
           />
