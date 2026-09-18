@@ -50,9 +50,15 @@ export async function POST(request: Request) {
     const values = parsed.data;
 
     const student = await studentRepository.getById(supabase, values.student_id);
+    // VERIFIED history only. A debrief awaiting its Learning Circle lead is
+    // not yet a recorded fact about the student, so it must not steer where
+    // the roadmap goes next — otherwise an unverified (or later rejected)
+    // claim would silently advance the student's position. For volunteers
+    // outside any circle this is the identical set of rows as before, since
+    // their debriefs verify on insert.
     const [roadmap, history] = await Promise.all([
       roadmapRepository.listByGrade(supabase, student.grade),
-      progressRepository.listForStudent(supabase, values.student_id),
+      progressRepository.listVerifiedForStudent(supabase, values.student_id),
     ]);
 
     // Server-side gate: never trust the client alone (the UI's Select can be
@@ -146,12 +152,45 @@ export async function POST(request: Request) {
       math_roadmap_id: mathValidation.roadmapEntryId,
     });
 
+    // Whether this debrief was recorded immediately or is now waiting on a
+    // Learning Circle lead is decided by the database trigger, not here —
+    // so read it back off the inserted row rather than re-deriving it. The
+    // volunteer needs to know which happened; silently showing "Progress
+    // saved" for something sitting in a queue is how people end up assuming
+    // a session was logged when it hasn't counted yet.
+    const awaitingVerification = created.verification_status === "pending";
+    let verifyingCircle: { id: string; name: string; leadName: string | null } | null = null;
+
+    if (awaitingVerification && created.learning_circle_id) {
+      const { data: circle } = await supabase
+        .from("learning_circles")
+        .select("id, name, lead:volunteers!learning_circles_lead_admin_id_fkey(name, preferred_name)")
+        .eq("id", created.learning_circle_id)
+        .maybeSingle();
+
+      if (circle) {
+        const row = circle as unknown as {
+          id: string;
+          name: string;
+          lead: { name: string; preferred_name: string | null } | null;
+        };
+        verifyingCircle = {
+          id: row.id,
+          name: row.name,
+          leadName: row.lead ? row.lead.preferred_name?.trim() || row.lead.name : null,
+        };
+      }
+    }
+
     return NextResponse.json({
       progress: created,
       mathSuggestion: mathSuggestion ?? null,
       englishSuggestion: englishSuggestion ?? null,
       // Backwards-compatible combined field for existing consumers.
       suggestedNextLesson,
+      verificationStatus: created.verification_status,
+      awaitingVerification,
+      verifyingCircle,
     });
   } catch (error) {
     return apiError(error);

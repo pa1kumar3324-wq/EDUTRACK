@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, NotebookPen, NotebookText } from "lucide-react";
+import { ArrowLeft, NotebookPen } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { studentRepository } from "@/lib/repositories/studentRepository";
@@ -17,21 +17,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import { LevelBadge } from "@/components/shared/LevelBadge";
-import { EmptyState } from "@/components/shared/EmptyState";
-import { ProgressTimeline } from "@/components/student/ProgressTimeline";
-import { RoadmapProgressTracker } from "@/components/student/RoadmapProgressTracker";
+import { StudentProfileTabs } from "@/components/student/StudentProfileTabs";
 import { RoadmapPositionControl } from "@/components/student/RoadmapPositionControl";
-import { StudentJourneyChart } from "@/components/charts/StudentJourneyChart";
 import { TsareenaFocusRegistrar } from "@/components/ai/TsareenaFocusRegistrar";
 import { buildRecentSessionSummaries, resolveSubjectExistingSuggestion } from "@/components/ai/TsareenaContext";
-import { initials, formatRelativeDate, displayName } from "@/lib/utils";
+import { initials } from "@/lib/utils";
 import type { Student, Progress } from "@/lib/types/database";
 
 type HistoryRow = Progress & {
@@ -64,6 +55,20 @@ export default async function StudentProfilePage({
 
   const typedHistory: HistoryRow[] = history;
 
+  // The timeline shows EVERYTHING (including debriefs awaiting their
+  // Learning Circle lead, dimmed — the volunteer who filed one needs to see
+  // it exists). Everything that reasons about the student's actual state —
+  // roadmap position, weak areas, the journey chart — reads only the
+  // VERIFIED subset, because an unverified debrief is not yet a recorded
+  // fact about this student and must not steer what gets taught next.
+  //
+  // For a program with no Learning Circles this is the same array: every
+  // debrief verifies on insert (and migration 008 backfilled all history).
+  const recordedHistory: HistoryRow[] = typedHistory.filter(
+    (p) => p.verification_status === "verified"
+  );
+  const pendingCount = typedHistory.filter((p) => p.verification_status === "pending").length;
+
   const baselineEnglish = baselinePositions.find((p) => p.subject === "english")?.learning_roadmap ?? null;
   const baselineMath = baselinePositions.find((p) => p.subject === "math")?.learning_roadmap ?? null;
 
@@ -71,7 +76,7 @@ export default async function StudentProfilePage({
     "english",
     student.grade,
     roadmap,
-    typedHistory,
+    recordedHistory,
     baselineEnglish
   );
 
@@ -79,7 +84,7 @@ export default async function StudentProfilePage({
     "math",
     student.grade,
     roadmap,
-    typedHistory,
+    recordedHistory,
     baselineMath
   );
 
@@ -93,7 +98,7 @@ export default async function StudentProfilePage({
 
   const weakTopicCounts = new Map<string, number>();
 
-  for (const p of typedHistory) {
+  for (const p of recordedHistory) {
     if (
       p.english_status === "not_understood" ||
       p.english_status === "needs_help"
@@ -123,7 +128,7 @@ export default async function StudentProfilePage({
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  const homeworkHistory = typedHistory.filter(
+  const homeworkHistory = recordedHistory.filter(
     (p) => p.homework
   );
 
@@ -132,7 +137,7 @@ export default async function StudentProfilePage({
   // the student's name (the UI already legitimately knows it) — the
   // student name never crosses into a Gemini request; see
   // components/ai/TsareenaContext.ts for the sanitizer that enforces this.
-  const latestRow = typedHistory[0];
+  const latestRow = recordedHistory[0];
   const tsareenaFocusContext = {
     studentName: student.name,
     studentId: student.id,
@@ -153,9 +158,9 @@ export default async function StudentProfilePage({
     // that subject (§8 of the Tsareena spec) — see
     // resolveSubjectExistingSuggestion for why this can't just be
     // `latestRow.suggested_next_lesson`.
-    mathExistingSuggestion: resolveSubjectExistingSuggestion(typedHistory, "math"),
-    englishExistingSuggestion: resolveSubjectExistingSuggestion(typedHistory, "english"),
-    recentSessions: buildRecentSessionSummaries(typedHistory, 6),
+    mathExistingSuggestion: resolveSubjectExistingSuggestion(recordedHistory, "math"),
+    englishExistingSuggestion: resolveSubjectExistingSuggestion(recordedHistory, "english"),
+    recentSessions: buildRecentSessionSummaries(recordedHistory, 6),
   };
 
   return (
@@ -313,204 +318,19 @@ export default async function StudentProfilePage({
         </Card>
       </div>
 
-      <Tabs defaultValue="roadmap">
-        <TabsList>
-          <TabsTrigger value="roadmap">
-            Roadmap
-          </TabsTrigger>
-          <TabsTrigger value="timeline">
-            Timeline
-          </TabsTrigger>
-          <TabsTrigger value="journey">
-            English &amp; Math Journey
-          </TabsTrigger>
-          <TabsTrigger value="weak-areas">
-            Weak Areas
-          </TabsTrigger>
-          <TabsTrigger value="homework">
-            Homework History
-          </TabsTrigger>
-          <TabsTrigger value="volunteers">
-            Volunteers
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="roadmap" className="mt-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">
-                  📘 English Roadmap
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <RoadmapProgressTracker subject="english" roadmap={roadmap} position={englishPosition} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">
-                  🔢 Math Roadmap
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <RoadmapProgressTracker subject="math" roadmap={roadmap} position={mathPosition} />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="timeline" className="mt-4">
-          {typedHistory.length === 0 ? (
-            <EmptyState
-              icon={NotebookText}
-              title="No sessions logged yet"
-              description="Once a volunteer submits an update, the full history appears here."
-            />
-          ) : (
-            <ProgressTimeline history={typedHistory} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="journey" className="mt-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">
-                  📘 English Journey
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <StudentJourneyChart
-                  history={typedHistory}
-                  subject="english"
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">
-                  🔢 Math Journey
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <StudentJourneyChart
-                  history={typedHistory}
-                  subject="math"
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="weak-areas" className="mt-4">
-          {weakAreas.length === 0 ? (
-            <EmptyState
-              icon={NotebookText}
-              title="No weak areas flagged"
-              description="Topics marked 'Needs Help' or 'Didn't Understand' will show up here."
-            />
-          ) : (
-            <Card>
-              <CardContent className="divide-y divide-border p-0">
-                {weakAreas.map(([topic, count]) => (
-                  <div
-                    key={topic}
-                    className="flex items-center justify-between px-5 py-3"
-                  >
-                    <span className="text-sm font-medium">
-                      {topic}
-                    </span>
-
-                    <Badge variant="warning">
-                      {count}x flagged
-                    </Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="homework" className="mt-4">
-          {homeworkHistory.length === 0 ? (
-            <EmptyState
-              icon={NotebookText}
-              title="No homework logged"
-              description="Homework assigned during sessions will appear here."
-            />
-          ) : (
-            <Card>
-              <CardContent className="divide-y divide-border p-0">
-                {homeworkHistory.map((p) => (
-                  <div key={p.id} className="px-5 py-3">
-                    <p className="text-sm">{p.homework}</p>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {p.volunteers ? displayName(p.volunteers) : "Unknown"} ·{" "}
-                      {formatRelativeDate(p.created_at)}
-                    </p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="volunteers" className="mt-4">
-  {assignedVolunteers.length === 0 ? (
-    <EmptyState
-      icon={NotebookText}
-      title="No volunteers assigned"
-      description="An admin can assign volunteers from the admin panel."
-    />
-  ) : (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {assignedVolunteers.map(
-        (v: {
-          id: string;
-          name: string;
-          preferred_name: string | null;
-          email: string;
-          avatar_url: string | null;
-        }) => (
-          <Link key={v.id} href={`/volunteers/${v.id}`} className="block rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
-            <Card className="transition-colors hover:bg-secondary/40">
-              <CardContent className="flex items-center gap-3 p-4">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage
-                    src={v.avatar_url ?? undefined}
-                    alt={displayName(v)}
-                  />
-                  <AvatarFallback>
-                    {initials(displayName(v))}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div>
-                  <p className="text-sm font-medium">
-                    {displayName(v)}
-                  </p>
-
-                  <p className="text-xs text-muted-foreground">
-                    {v.email}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )
-      )}
-    </div>
-  )}
-</TabsContent>
-      </Tabs>
+      <StudentProfileTabs
+        student={student}
+        englishPosition={englishPosition}
+        mathPosition={mathPosition}
+        roadmap={roadmap}
+        typedHistory={typedHistory}
+        recordedHistory={recordedHistory}
+        pendingCount={pendingCount}
+        weakAreas={weakAreas}
+        homeworkHistory={homeworkHistory}
+        assignedVolunteers={assignedVolunteers}
+        isAdmin={user.role === "admin"}
+      />
     </div>
   );
 }

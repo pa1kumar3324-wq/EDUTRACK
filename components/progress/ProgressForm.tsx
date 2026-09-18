@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,9 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
   const [showSuccess, setShowSuccess] = useState(false);
   const [mathSuggestion, setMathSuggestion] = useState<string | null>(null);
   const [englishSuggestion, setEnglishSuggestion] = useState<string | null>(null);
+  // Set when the author belongs to a Learning Circle, in which case this
+  // debrief is queued for its lead admin rather than recorded outright.
+  const [pendingCircle, setPendingCircle] = useState<{ name: string; leadName: string | null } | null>(null);
 
   const {
     register,
@@ -86,6 +89,11 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
     const result = await submitProgress(values);
     setMathSuggestion(result.mathSuggestion ?? null);
     setEnglishSuggestion(result.englishSuggestion ?? null);
+    setPendingCircle(
+      result.awaitingVerification && result.verifyingCircle
+        ? { name: result.verifyingCircle.name, leadName: result.verifyingCircle.leadName }
+        : null
+    );
     setShowSuccess(true);
 
     // Tell Tsareena a meaningful event happened (§13) — she decides
@@ -108,19 +116,40 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-success/30 bg-success/5 py-16 text-center"
+        className={
+          pendingCircle
+            ? "flex flex-col items-center justify-center gap-4 rounded-2xl border border-warning/30 bg-warning/5 py-16 text-center"
+            : "flex flex-col items-center justify-center gap-4 rounded-2xl border border-success/30 bg-success/5 py-16 text-center"
+        }
       >
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 15 }}
         >
-          <CheckCircle2 className="h-14 w-14 text-success" />
+          {/* Two outcomes, two affordances. Showing the green "saved" tick
+              for a debrief that's still queued would tell the volunteer
+              their session already counts when it doesn't yet. */}
+          {pendingCircle ? (
+            <ShieldCheck className="h-14 w-14 text-warning" />
+          ) : (
+            <CheckCircle2 className="h-14 w-14 text-success" />
+          )}
         </motion.div>
         <div>
-          <p className="font-display text-lg font-semibold">Progress saved</p>
+          <p className="font-display text-lg font-semibold">
+            {pendingCircle ? "Sent for verification" : "Progress saved"}
+          </p>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {student.name}'s timeline has been updated. Next volunteer will see this immediately.
+            {pendingCircle ? (
+              <>
+                Your debrief for {student.name} is with{" "}
+                {pendingCircle.leadName ?? `the lead of ${pendingCircle.name}`} in {pendingCircle.name}.
+                It joins {student.name}&apos;s record once verified.
+              </>
+            ) : (
+              <>{student.name}&apos;s timeline has been updated. Next volunteer will see this immediately.</>
+            )}
           </p>
         </div>
         {(mathSuggestion || englishSuggestion) && (

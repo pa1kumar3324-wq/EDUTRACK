@@ -4,6 +4,7 @@ import {
   Map,
   BarChart3,
   FileDown,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -20,6 +21,10 @@ export const volunteerNav: NavItem[] = [
 export const adminNav: NavItem[] = [
   { href: "/admin", label: "Analytics", icon: BarChart3 },
   { href: "/admin/people", label: "People", icon: Users },
+  // Debrief verification for Learning Circles this admin leads. Shown to
+  // every admin: an org with no circles sees an empty-state that explains
+  // the feature rather than a broken-looking page.
+  { href: "/admin/verification", label: "Verification", icon: ShieldCheck },
   { href: "/admin/reports-coverage", label: "Reports & Coverage", icon: FileDown },
   { href: "/admin/roadmap", label: "Roadmap", icon: Map },
 ];

@@ -19,6 +19,22 @@ export type UnderstandingStatus = "independent" | "needs_help" | "not_understood
 export type Subject = "english" | "math";
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 
+/**
+ * Lifecycle of a class debrief (a `progress` row).
+ *
+ * - `verified` — recorded. Counts toward `latest_progress`,
+ *   `students_needing_revision`, and roadmap continuity. This is the
+ *   DEFAULT: a volunteer who belongs to no Learning Circle, and every row
+ *   written before migration 008, is verified on insert with no admin in
+ *   the loop, exactly as before this feature existed.
+ * - `pending` — filed by a Learning Circle member, awaiting that circle's
+ *   lead admin. Visible on the student timeline (so the volunteer can see
+ *   their own submission) but counted nowhere.
+ * - `rejected` — sent back by the lead admin. Retained for audit; never
+ *   counted.
+ */
+export type DebriefVerificationStatus = "pending" | "verified" | "rejected";
+
 export type Volunteer = {
   id: string;
   /** Official/legal name — for formal records (attendance exports, admin). Prefer `preferred_name` (via displayName()) elsewhere. */
@@ -124,6 +140,31 @@ export type Progress = {
    */
   session_observations: import("./sessionObservations").SessionObservations | null;
   session_date: string;
+  /**
+   * Whether this debrief has been recorded. Derived server-side by a
+   * BEFORE INSERT trigger (see migration 008) — never accepted from the
+   * client, and not part of the progress form's payload.
+   */
+  verification_status: DebriefVerificationStatus;
+  /**
+   * The Learning Circle that owned this debrief when it was filed, or null
+   * if the author belonged to no circle. Snapshotted on insert and
+   * immutable afterwards, so later membership changes never reassign an
+   * in-flight debrief to a different verifier.
+   */
+  learning_circle_id: string | null;
+  /** The lead admin who verified/rejected this. Null for auto-verified and pending rows. */
+  verified_by: string | null;
+  verified_at: string | null;
+  /** Optional note the lead admin left when verifying or (more usefully) rejecting. */
+  verification_notes: string | null;
+  /**
+   * Admin who last corrected this debrief's taught content (topic/status/
+   * homework/notes), if any. Stamped server-side by trigger (migration
+   * 009) — never client input. Null until the first edit.
+   */
+  edited_by: string | null;
+  edited_at: string | null;
   created_at: string;
 };
 
@@ -173,6 +214,52 @@ export type StudentRoadmapPosition = {
 
 export type StudentRoadmapPositionWithTopic = StudentRoadmapPosition & {
   learning_roadmap: LearningRoadmapEntry | null;
+};
+
+/**
+ * A Learning Circle: a named group of existing volunteers led by one admin.
+ * Debriefs filed by its members require that lead admin's verification
+ * before they count. See supabase/migrations/008_learning_circles.sql.
+ */
+export type LearningCircle = {
+  id: string;
+  name: string;
+  description: string | null;
+  /** The only person who can verify this circle's debriefs. Always an active admin (DB-enforced). */
+  lead_admin_id: string;
+  created_by: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LearningCircleMember = {
+  id: string;
+  circle_id: string;
+  volunteer_id: string;
+  added_by: string | null;
+  added_at: string;
+};
+
+/** A membership row joined to the volunteer it points at, for list UIs. */
+export type LearningCircleMemberWithVolunteer = LearningCircleMember & {
+  volunteers: PublicVolunteer | null;
+};
+
+/** A circle joined to its lead admin and its members — what the admin circles page renders. */
+export type LearningCircleDetail = LearningCircle & {
+  lead: PublicVolunteer | null;
+  learning_circle_members: LearningCircleMemberWithVolunteer[];
+};
+
+/**
+ * A pending debrief as shown in the verification queue: the progress row
+ * plus the student it concerns, the volunteer who filed it, and its circle.
+ */
+export type PendingDebrief = Progress & {
+  students: Pick<Student, "id" | "name" | "grade"> | null;
+  volunteers: Pick<PublicVolunteer, "id" | "name" | "preferred_name" | "avatar_url"> | null;
+  learning_circles: Pick<LearningCircle, "id" | "name" | "lead_admin_id"> | null;
 };
 
 export interface Database {
@@ -243,6 +330,27 @@ export interface Database {
             referencedRelation: "volunteers";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "progress_learning_circle_id_fkey";
+            columns: ["learning_circle_id"];
+            isOneToOne: false;
+            referencedRelation: "learning_circles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "progress_verified_by_fkey";
+            columns: ["verified_by"];
+            isOneToOne: false;
+            referencedRelation: "volunteers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "progress_edited_by_fkey";
+            columns: ["edited_by"];
+            isOneToOne: false;
+            referencedRelation: "volunteers";
+            referencedColumns: ["id"];
+          },
         ];
       };
       attendance: {
@@ -261,6 +369,48 @@ export interface Database {
             foreignKeyName: "attendance_marked_by_fkey";
             columns: ["marked_by"];
             isOneToOne: false;
+            referencedRelation: "volunteers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      learning_circles: {
+        Row: LearningCircle;
+        Insert: Partial<LearningCircle> & { name: string; lead_admin_id: string };
+        Update: Partial<LearningCircle>;
+        Relationships: [
+          {
+            foreignKeyName: "learning_circles_lead_admin_id_fkey";
+            columns: ["lead_admin_id"];
+            isOneToOne: false;
+            referencedRelation: "volunteers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "learning_circles_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "volunteers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      learning_circle_members: {
+        Row: LearningCircleMember;
+        Insert: Partial<LearningCircleMember> & { circle_id: string; volunteer_id: string };
+        Update: Partial<LearningCircleMember>;
+        Relationships: [
+          {
+            foreignKeyName: "learning_circle_members_circle_id_fkey";
+            columns: ["circle_id"];
+            isOneToOne: false;
+            referencedRelation: "learning_circles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "learning_circle_members_volunteer_id_fkey";
+            columns: ["volunteer_id"];
+            isOneToOne: true;
             referencedRelation: "volunteers";
             referencedColumns: ["id"];
           },
@@ -310,6 +460,7 @@ export interface Database {
       understanding_status: UnderstandingStatus;
       subject: Subject;
       attendance_status: AttendanceStatus;
+      debrief_verification_status: DebriefVerificationStatus;
     };
     CompositeTypes: Record<string, never>;
   };

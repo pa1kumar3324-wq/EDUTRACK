@@ -168,7 +168,15 @@ async function handleExport(request: Request) {
   } else {
     const { data, error } = await supabase
       .from("progress")
-      .select("created_at, english_topic, english_status, math_topic, math_status, homework, students(name), volunteers(name)")
+      // `volunteers` must be qualified by constraint name: since migration
+      // 008 `progress` has two FKs to it (volunteer_id, verified_by) and a
+      // bare embed is ambiguous. Exports are a formal record, so they
+      // include verified debriefs only — anything still awaiting its
+      // Learning Circle lead hasn't been recorded yet.
+      .select(
+        "created_at, english_topic, english_status, math_topic, math_status, homework, students(name), volunteers!progress_volunteer_id_fkey(name)"
+      )
+      .eq("verification_status", "verified")
       .order("created_at", { ascending: false })
       .limit(1000);
     if (error) throw error;

@@ -443,3 +443,291 @@ create policy "avatars_owner_or_admin_delete" on storage.objects for delete
     bucket_id = 'avatars'
     and (is_admin() or (storage.foldername(name))[1] = auth.uid()::text)
   );
+
+-- ----------------------------------------------------------------------------
+-- LEARNING CIRCLES + DEBRIEF VERIFICATION
+-- A Learning Circle (LC) is a named group of existing volunteers led by one
+-- admin. Debriefs filed by a circle's members land as 'pending' and are only
+-- "recorded" (visible to latest_progress, students_needing_revision, and the
+-- roadmap continuity engine) once that circle's lead admin verifies them.
+--
+-- Verification is opt-in per volunteer: `verification_status` defaults to
+-- 'verified', so a volunteer who is in no circle keeps the original
+-- zero-friction flow, and an org that never creates a circle sees no change.
+--
+-- This block mirrors supabase/migrations/008_learning_circles.sql, which is
+-- what existing projects should run. See that file for the full rationale.
+-- ----------------------------------------------------------------------------
+create type debrief_verification_status as enum ('pending', 'verified', 'rejected');
+
+create table learning_circles (
+  id             uuid primary key default gen_random_uuid(),
+  name           text not null check (char_length(trim(name)) between 1 and 120),
+  description    text check (char_length(description) <= 1000),
+  -- on delete restrict: a circle with no lead has nobody who can verify its
+  -- debriefs, so they would pile up pending forever.
+  lead_admin_id  uuid not null references volunteers (id) on delete restrict,
+  created_by     uuid references volunteers (id) on delete set null,
+  is_active      boolean not null default true,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+create unique index idx_learning_circles_active_name
+  on learning_circles (lower(trim(name))) where is_active;
+create index idx_learning_circles_lead on learning_circles (lead_admin_id);
+
+create table learning_circle_members (
+  id            uuid primary key default gen_random_uuid(),
+  circle_id     uuid not null references learning_circles (id) on delete cascade,
+  volunteer_id  uuid not null references volunteers (id) on delete cascade,
+  added_by      uuid references volunteers (id) on delete set null,
+  added_at      timestamptz not null default now(),
+  -- One circle per volunteer: guarantees each debrief has exactly one
+  -- unambiguous verifier.
+  unique (volunteer_id),
+  unique (circle_id, volunteer_id)
+);
+
+create index idx_learning_circle_members_circle on learning_circle_members (circle_id);
+
+alter table progress
+  add column verification_status debrief_verification_status not null default 'verified',
+  add column learning_circle_id  uuid references learning_circles (id) on delete set null,
+  add column verified_by         uuid references volunteers (id) on delete set null,
+  add column verified_at         timestamptz,
+  add column verification_notes  text check (char_length(verification_notes) <= 1000);
+
+create index idx_progress_verification on progress (verification_status, created_at desc);
+create index idx_progress_pending_circle
+  on progress (learning_circle_id, created_at desc) where verification_status = 'pending';
+
+create or replace function volunteer_active_circle(p_volunteer_id uuid)
+returns uuid language sql security definer stable as $$
+  select m.circle_id
+  from learning_circle_members m
+  join learning_circles c on c.id = m.circle_id
+  where m.volunteer_id = p_volunteer_id and c.is_active
+  limit 1;
+$$;
+
+create or replace function is_circle_lead(p_circle_id uuid)
+returns boolean language sql security definer stable as $$
+  select exists (
+    select 1 from learning_circles
+    where id = p_circle_id and lead_admin_id = auth.uid()
+  );
+$$;
+
+create or replace function ensure_circle_lead_is_admin()
+returns trigger language plpgsql security definer as $$
+begin
+  if not exists (
+    select 1 from volunteers where id = new.lead_admin_id and role = 'admin' and is_active
+  ) then
+    raise exception 'The lead of a Learning Circle must be an active admin.' using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_learning_circle_lead_must_be_admin
+before insert or update of lead_admin_id on learning_circles
+for each row execute function ensure_circle_lead_is_admin();
+
+-- Derives verification state server-side and overwrites whatever the client
+-- sent — `progress` is directly writable over the REST API, so this cannot
+-- live in the app layer alone.
+create or replace function stamp_progress_verification()
+returns trigger language plpgsql security definer as $$
+declare
+  v_circle uuid;
+  v_is_lead boolean;
+begin
+  v_circle := volunteer_active_circle(new.volunteer_id);
+
+  if v_circle is null then
+    new.learning_circle_id  := null;
+    new.verification_status := 'verified';
+    new.verified_by         := null;
+    new.verified_at         := null;
+    new.verification_notes  := null;
+    return new;
+  end if;
+
+  select (lead_admin_id = new.volunteer_id) into v_is_lead
+  from learning_circles where id = v_circle;
+
+  new.learning_circle_id := v_circle;
+
+  -- A lead who is also a member has nobody above them; self-verification is
+  -- a no-op ritual, so their debriefs record immediately.
+  if coalesce(v_is_lead, false) then
+    new.verification_status := 'verified';
+    new.verified_by         := new.volunteer_id;
+    new.verified_at         := now();
+  else
+    new.verification_status := 'pending';
+    new.verified_by         := null;
+    new.verified_at         := null;
+    new.verification_notes  := null;
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_stamp_progress_verification
+before insert on progress
+for each row execute function stamp_progress_verification();
+
+create or replace function guard_debrief_verification()
+returns trigger language plpgsql security definer as $$
+begin
+  if auth.role() = 'service_role' then
+    return new;
+  end if;
+
+  if new.learning_circle_id is distinct from old.learning_circle_id then
+    raise exception 'A debrief''s Learning Circle cannot be changed after it is filed.'
+      using errcode = '42501';
+  end if;
+
+  if new.verification_status is distinct from old.verification_status then
+    if old.learning_circle_id is null then
+      if not is_admin() then
+        raise exception 'Only an admin can change a debrief''s verification status.'
+          using errcode = '42501';
+      end if;
+    elsif not is_circle_lead(old.learning_circle_id) then
+      raise exception 'Only the lead admin of this Learning Circle can verify its debriefs.'
+        using errcode = '42501';
+    end if;
+
+    if new.verification_status = 'pending' then
+      new.verified_by := null;
+      new.verified_at := null;
+    else
+      new.verified_by := auth.uid();
+      new.verified_at := now();
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_guard_debrief_verification
+before update on progress
+for each row execute function guard_debrief_verification();
+
+create or replace function touch_learning_circle_updated_at()
+returns trigger language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create trigger trg_touch_learning_circle
+before update on learning_circles
+for each row execute function touch_learning_circle_updated_at();
+
+alter table learning_circles enable row level security;
+alter table learning_circle_members enable row level security;
+
+create policy "learning_circles_select_all" on learning_circles for select
+  using (auth.role() = 'authenticated');
+create policy "learning_circles_admin_write" on learning_circles for all
+  using (is_admin()) with check (is_admin());
+
+create policy "learning_circle_members_select_all" on learning_circle_members for select
+  using (auth.role() = 'authenticated');
+create policy "learning_circle_members_admin_write" on learning_circle_members for all
+  using (is_admin()) with check (is_admin());
+
+-- Recreate both progress views so "recorded" means "verified". Declared
+-- earlier in this file against the pre-verification `progress` shape;
+-- dropping and recreating avoids `create or replace view`'s
+-- cannot-change-column-name restriction (see migration 006).
+drop view if exists latest_progress;
+create view latest_progress as
+select distinct on (p.student_id)
+  p.*,
+  coalesce(v.preferred_name, v.name) as volunteer_name
+from progress p
+join volunteers v on v.id = p.volunteer_id
+where p.verification_status = 'verified'
+order by p.student_id, p.created_at desc;
+
+drop view if exists students_needing_revision;
+create view students_needing_revision as
+with ranked as (
+  select
+    p.*,
+    row_number() over (partition by p.student_id order by p.created_at desc) as rn
+  from progress p
+  where p.verification_status = 'verified'
+)
+select
+  s.id as student_id,
+  s.name,
+  s.grade,
+  coalesce(max(s.updated_at), s.created_at) as last_activity,
+  bool_or(
+    r1.english_status = 'not_understood' and r2.english_status = 'not_understood'
+  ) as english_double_red,
+  bool_or(
+    r1.math_status = 'not_understood' and r2.math_status = 'not_understood'
+  ) as math_double_red,
+  (coalesce(max(s.updated_at), s.created_at) < now() - interval '14 days') as stale
+from students s
+left join ranked r1 on r1.student_id = s.id and r1.rn = 1
+left join ranked r2 on r2.student_id = s.id and r2.rn = 2
+where s.is_active
+group by s.id, s.name, s.grade, s.created_at
+having
+  bool_or(r1.english_status = 'not_understood' and r2.english_status = 'not_understood')
+  or bool_or(r1.math_status = 'not_understood' and r2.math_status = 'not_understood')
+  or (coalesce(max(s.updated_at), s.created_at) < now() - interval '14 days');
+
+-- ----------------------------------------------------------------------------
+-- ADMIN EDIT TRAIL ON PROGRESS
+-- Admins may correct a debrief's taught content (progress_admin_write
+-- already permits this). These columns record who last did so and when,
+-- stamped server-side by trigger (never client input) — mirrors the
+-- verified_by/verified_at pattern above. See
+-- supabase/migrations/009_progress_edit_trail.sql for full rationale.
+-- ----------------------------------------------------------------------------
+alter table progress
+  add column edited_by uuid references volunteers (id) on delete set null,
+  add column edited_at timestamptz;
+
+create or replace function stamp_progress_edit()
+returns trigger language plpgsql security definer as $$
+begin
+  if auth.role() = 'service_role' then
+    return new;
+  end if;
+
+  if new.english_topic         is distinct from old.english_topic
+  or new.english_status        is distinct from old.english_status
+  or new.english_roadmap_id    is distinct from old.english_roadmap_id
+  or new.math_topic            is distinct from old.math_topic
+  or new.math_status           is distinct from old.math_status
+  or new.math_roadmap_id       is distinct from old.math_roadmap_id
+  or new.homework               is distinct from old.homework
+  or new.notes                  is distinct from old.notes
+  or new.session_observations   is distinct from old.session_observations
+  then
+    new.edited_by := auth.uid();
+    new.edited_at := now();
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_stamp_progress_edit
+before update on progress
+for each row execute function stamp_progress_edit();

@@ -1,5 +1,172 @@
 # Sprint Changelog
 
+## Added — Progress overview bar + admin debrief editing
+
+Two additions to the student profile, both visible to volunteers and admins:
+
+1. **Roadmap progress bar.** A compact bar now sits at the top of every student profile, just below
+   the header, showing how far the student has moved through the English and Math roadmaps (the same
+   ✔/➡/⬜ position the Roadmap tab's `RoadmapProgressTracker` already computes — the bar reuses that
+   exact `currentIndex/total` math via a shared helper in `StudentProfileTabs.tsx`, so the two views
+   can never disagree). Clicking the bar jumps straight to the Timeline tab, where the complete
+   history — every session, what was taught, and who taught it — is visible.
+
+   The Roadmap/Timeline/Journey/Weak-Areas/Homework/Volunteers tab block moved from the student
+   profile server component into a new client component, `components/student/StudentProfileTabs.tsx`,
+   specifically so the bar and the tabs can share one `useState`. Radix's `Tabs` only accepts
+   controlled `value`/`onValueChange` from within its own client boundary — a server-rendered bar
+   sitting beside an uncontrolled `<Tabs defaultValue="roadmap">` has no way to tell it to switch tabs.
+   A subject with no roadmap defined for its grade renders as a hatched "not set up" segment rather
+   than 0%, so an unpopulated grade doesn't read as "no progress."
+
+2. **Admin debrief editing.** Admins can now correct an existing debrief's taught content — topic,
+   understanding status, homework, notes — via a "✎ Edit" affordance on each Timeline entry
+   (`components/admin/EditProgressDialog.tsx`), rather than asking the original volunteer to re-file.
+   This was previously possible at the database layer (`progress_admin_write` RLS already permitted
+   admin `UPDATE`s) but had no application-layer route, validation, or audit trail.
+
+   - New route: `PATCH /api/progress/[id]` (admin only). Re-runs the same
+     `validateTopicAgainstRoadmap` gate `POST /api/progress` uses, checked against the *merged*
+     result of the existing row + the patch (so a valid edit can clear one subject's topic as long as
+     the other still has one — the "at least one subject" invariant is on the resulting record, not
+     the patch in isolation).
+   - Deliberately narrow: does **not** touch `verification_status`, `learning_circle_id`,
+     `verified_by`, or `verified_at`. Fixing a typo in an already-verified debrief doesn't send it
+     back through its Learning Circle lead — that stays exclusively `POST /api/debriefs/[id]/verify`'s
+     job. Also excludes `session_observations`: editing rich per-session detail after the fact reads
+     as rewriting history rather than fixing a clerical error.
+   - New audit columns, `progress.edited_by` / `progress.edited_at` (migration
+     `009_progress_edit_trail.sql`), stamped by a `BEFORE UPDATE` trigger from `auth.uid()`/`now()` —
+     never accepted from the client — following the same reasoning as migration 008's
+     `verified_by`/`verified_at`: `progress_admin_write` has no `WITH CHECK` beyond `is_admin()`, so
+     without a trigger an admin's raw REST call could forge `edited_by` as a different admin entirely.
+     Shown on the timeline as "Edited by {admin} · {relative time}" directly under the entry.
+
+Both features are additive and touch no existing behavior: the bar is read-only until clicked, and
+editing is gated behind `isAdmin` (new optional prop on `ProgressTimeline`, defaulting to `false`) so
+every non-admin view of the timeline renders exactly as it did before this sprint.
+
+## Added — Learning Circles & debrief verification
+
+A Learning Circle (LC) is a named group of existing volunteers led by one admin. Debriefs filed by
+that circle's members are held as `pending` until the circle's lead admin verifies them; only on
+verification is a debrief **recorded** — meaning it reaches `latest_progress`,
+`students_needing_revision`, roadmap continuity, reports, and exports.
+
+### The load-bearing compatibility decision
+
+`progress.verification_status` defaults to **`'verified'`, not `'pending'`**. Consequently:
+
+- every pre-existing `progress` row is backfilled to `verified` and behaves exactly as before;
+- every volunteer who is *not* in a circle keeps the original zero-friction flow — their debrief is
+  recorded the instant they submit, with no admin in the loop;
+- an organisation that never creates a circle sees **no behavioural change at all**.
+
+Verification is therefore strictly opt-in, per volunteer, by putting them in a circle.
+
+### Schema — `supabase/migrations/008_learning_circles.sql`
+
+Run this once against an existing project (`schema.sql` carries a mirrored block for fresh installs).
+
+- New enum `debrief_verification_status` (`pending` / `verified` / `rejected`).
+- New tables `learning_circles` (name, description, `lead_admin_id`, `is_active` soft delete) and
+  `learning_circle_members`.
+- `progress` gains `verification_status`, `learning_circle_id`, `verified_by`, `verified_at`,
+  `verification_notes`, plus a partial index for the pending queue.
+- `latest_progress` and `students_needing_revision` recreated to read verified rows only. Both are
+  dropped and recreated rather than `create or replace`d, for the same reason migration 006
+  documents: `p.*` is wider than the views' stored column lists.
+- RLS mirrors `assignments`: any authenticated user can read circles and membership (a volunteer
+  should be able to see which circle they're in and who leads it); only admins write.
+
+### The rules live in triggers, not the API layer
+
+`progress` is directly writable over the Supabase REST API by any authenticated volunteer for their
+assigned students (policy `progress_insert_own_assignment`), so a rule enforced only in
+`app/api/progress/route.ts` could be bypassed with a raw POST. Following migration 005's precedent:
+
+- `trg_stamp_progress_verification` (BEFORE INSERT) *derives* the verification status and owning
+  circle server-side and overwrites whatever the client sent. `verification_status` is never client
+  input and is deliberately absent from `progressSchema`.
+- `trg_guard_debrief_verification` (BEFORE UPDATE) allows only the circle's **own lead admin** to
+  change a debrief's status, and stamps `verified_by`/`verified_at` from `auth.uid()`/`now()` — so
+  the audit trail reflects who Postgres actually saw, not what the app process claimed.
+- `trg_learning_circle_lead_must_be_admin` keeps a circle's lead an active admin. A non-admin lead
+  could never reach the verification UI, so their circle's debriefs would be unverifiable.
+
+### Two invariants, enforced in the DB and mirrored in the UI
+
+- **A volunteer belongs to at most one circle** (`unique (volunteer_id)`). Two circles would mean two
+  lead admins with equal claim on the same debrief and no principled tiebreak. The member picker
+  shows volunteers already in another circle as disabled, naming that circle, rather than letting the
+  admin submit a roster the server will reject with a 409.
+- **`learning_circle_id` is snapshotted at insert and immutable.** Later membership changes never
+  reassign an in-flight debrief to a verifier who never saw the class. Reassigning a circle's
+  *lead*, by contrast, does move its pending queue — which is what you want when a lead goes on
+  leave.
+
+### Fixed — a latent break introduced by this feature
+
+Adding `verified_by` gives `progress` a **second** foreign key to `volunteers`, which makes a bare
+`volunteers(...)` PostgREST embed ambiguous — those queries would have started failing at runtime.
+All three sites were qualified by constraint name: `progressRepository.listForStudent`,
+`progressRepository.recent`, and `app/api/export/route.ts`. Don't reintroduce the shorthand.
+
+### Judgement call — which metrics count what
+
+Rather than filtering every query to verified, `analyticsRepository` now splits two different
+questions (there's a note at the foot of that file):
+
+- **Learning-state metrics** — what do we believe about this student? (`weakTopics`,
+  `latest_progress`, `students_needing_revision`, roadmap continuity, journey charts, exports.)
+  These read **verified only**. An unverified claim about a student's understanding shouldn't steer
+  teaching.
+- **Activity / coverage metrics** — did the volunteer show up and write it up?
+  (`studentsUpdatedToday`, `dashboardStats`, `weeklyProgress`, `pendingVolunteers`,
+  `weekendCoverage`.) These count anything **not rejected**, pending included. The volunteer
+  finished their work at submission; holding an admin's queue latency against them would make these
+  read as no-shows.
+
+This split is a product decision as much as a technical one — worth confirming it matches how the
+program actually wants to measure its volunteers.
+
+### API
+
+- `GET|POST /api/learning-circles` — list (any authenticated user; `?mine=1` for the caller's own
+  circle) and create (admin).
+- `GET|PATCH|DELETE /api/learning-circles/[id]` — soft delete, mirroring volunteer deactivation.
+- `PUT /api/learning-circles/[id]/members` — takes the **full desired roster** and diffs it
+  server-side, rather than add/remove deltas. `AssignVolunteersDialog` needs `Promise.allSettled`
+  and per-item error reporting precisely because a partial failure leaves the UI and the database
+  disagreeing; one declarative request avoids that class of bug here.
+- `GET /api/debriefs/pending` — defaults to circles the caller leads; `?scope=all` for oversight.
+- `POST /api/debriefs/[id]/verify` — `{ action: "verify" | "reject", notes? }`. `requireAdminApi()`
+  is a coarse first gate only; the real "you must be the lead of *this* circle" check is the trigger,
+  surfacing as a 403. Returns 409 if the debrief is no longer pending (someone else got there first).
+
+### UI
+
+- **People → Learning Circles** tab: create circles, pick the lead, manage rosters, reassign the
+  verifier inline.
+- **New "Verification" nav item**: My-circles / All-circles queue. Verify/reject buttons are hidden
+  in the All-circles view, since the server would 403 those writes and offering a button that fails
+  is worse than not offering it.
+- **Student timeline**: pending debriefs are shown but dimmed with a hollow node, so the volunteer
+  who filed one can see it exists without it reading as part of the settled record. Reviewer notes
+  and "Verified by" render inline. The badge deliberately renders *nothing* for a verified debrief
+  that never involved a circle, so timelines in non-circle programs look exactly as they did.
+- **Progress form**: a distinct amber "Sent for verification" state naming the reviewing lead,
+  instead of the green "Progress saved" tick. Showing the success tick either way would leave the
+  volunteer believing a queued session already counts.
+
+### Verification
+
+`npm run typecheck` and `npm run lint` pass clean. **The migration has not been run against a live
+Supabase project in this session** — apply `008_learning_circles.sql` and smoke-test the verify flow
+before relying on it. In particular, confirm the two recreated views return what you expect, since
+dropping and recreating them is the riskiest step in the migration.
+
+
 Scope note up front: this entry documents the remediation pass run against the external
 security/code audit in `EduTrack_v6_FIX_PROMPT.md`. Every item below was addressed in dependency,
 schema, or application code except where noted; `npm run typecheck`, `npm run lint`, and

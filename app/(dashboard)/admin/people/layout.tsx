@@ -5,6 +5,7 @@ import { TabNav } from "@/components/shared/TabNav";
 const tabs = [
   { href: "/admin/people/students", label: "Students" },
   { href: "/admin/people/volunteers", label: "Volunteers" },
+  { href: "/admin/people/circles", label: "Learning Circles" },
   { href: "/admin/people/attendance", label: "Attendance" },
 ];
 

@@ -23,7 +23,11 @@ export const analyticsRepository = {
           .select("*", { count: "exact", head: true })
           .eq("role", "volunteer")
           .eq("is_active", true),
-        supabase.from("progress").select("student_id, created_at"),
+        // Rejected debriefs aside, a filed debrief counts as "the
+        // volunteer did their part today" even while it waits on its
+        // Learning Circle lead — this stat measures activity, not
+        // recorded learning state. See the note at the foot of this file.
+        supabase.from("progress").select("student_id, created_at").neq("verification_status", "rejected"),
         supabase.from("students_needing_revision").select("student_id"),
       ]);
 
@@ -52,7 +56,14 @@ export const analyticsRepository = {
 
     const weekStart = startOfWeek(new Date());
     const [{ data: progressRows }, { data: revisionRows }] = await Promise.all([
-      supabase.from("progress").select("student_id, created_at").in("student_id", studentIds),
+      // Activity metric — includes debriefs still awaiting verification,
+      // so a volunteer isn't told they have a "pending update" for a
+      // student they already wrote up this week.
+      supabase
+        .from("progress")
+        .select("student_id, created_at")
+        .in("student_id", studentIds)
+        .neq("verification_status", "rejected"),
       supabase.from("students_needing_revision").select("student_id").in("student_id", studentIds),
     ]);
 
@@ -78,6 +89,7 @@ export const analyticsRepository = {
     const { data, error } = await supabase
       .from("progress")
       .select("created_at")
+      .neq("verification_status", "rejected")
       .gte("created_at", since.toISOString());
     if (error) throw error;
 
@@ -115,12 +127,15 @@ export const analyticsRepository = {
     const { data, error } = await supabase
       .from("progress")
       .select("english_topic, english_status, math_topic, math_status")
+      // Learning-state metric: only verified debriefs count.
+      .eq("verification_status", "verified")
       .in("english_status", ["needs_help", "not_understood"]);
     if (error) throw error;
 
     const { data: mathData } = await supabase
       .from("progress")
       .select("math_topic, math_status")
+      .eq("verification_status", "verified")
       .in("math_status", ["needs_help", "not_understood"]);
 
     const counts = new Map<string, number>();
@@ -142,7 +157,9 @@ export const analyticsRepository = {
     const [{ data: volunteers }, { data: assignments }, { data: progressRows }] = await Promise.all([
       supabase.from("volunteers").select("id, name, preferred_name").eq("role", "volunteer").eq("is_active", true),
       supabase.from("assignments").select("volunteer_id, student_id"),
-      supabase.from("progress").select("volunteer_id, created_at"),
+      // Diligence metric — a volunteer who filed a debrief has logged an
+      // update, whether or not their lead admin has got to it yet.
+      supabase.from("progress").select("volunteer_id, created_at").neq("verification_status", "rejected"),
     ]);
 
     const lastUpdateByVolunteer = new Map<string, string>();
@@ -189,6 +206,9 @@ export const analyticsRepository = {
       supabase
         .from("progress")
         .select("student_id, created_at")
+        // Operational coverage: did the session happen and get written
+        // up? A debrief awaiting verification still answers yes.
+        .neq("verification_status", "rejected")
         .gte("created_at", weekendStart.toISOString())
         .lt("created_at", rangeEndExclusive.toISOString()),
     ]);
@@ -216,3 +236,28 @@ export const analyticsRepository = {
     };
   },
 };
+
+// ----------------------------------------------------------------------------
+// A NOTE ON VERIFICATION AND WHICH METRICS COUNT WHAT
+//
+// Migration 008 introduced Learning Circles: a debrief filed by a circle
+// member is 'pending' until that circle's lead admin verifies it, at which
+// point it becomes 'verified' and is "recorded".
+//
+// The queries above deliberately split two different questions:
+//
+//   * LEARNING-STATE metrics — what do we believe about this student?
+//     (weakTopics, latest_progress, students_needing_revision, roadmap
+//     continuity, exports.) These read VERIFIED rows only. An unverified
+//     claim about a student's understanding shouldn't steer teaching.
+//
+//   * ACTIVITY / COVERAGE metrics — did the volunteer show up and write it
+//     up? (adminStats.studentsUpdatedToday, dashboardStats,
+//     weeklyProgress, pendingVolunteers, weekendCoverage.) These count
+//     anything NOT rejected, pending included. The volunteer finished their
+//     work the moment they submitted; holding an admin's queue latency
+//     against them would make these numbers read as no-shows.
+//
+// Because every pre-008 row was backfilled to 'verified', both groups
+// behave exactly as before for any org that never creates a circle.
+// ----------------------------------------------------------------------------
