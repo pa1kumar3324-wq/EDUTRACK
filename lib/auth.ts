@@ -24,6 +24,17 @@ export async function requireUser(): Promise<AuthUser> {
 
   if (error || !profile) redirect("/login");
 
+  // Deactivating a volunteer only flips `is_active` — it doesn't end their
+  // session, so a still-valid cookie would otherwise sail straight through
+  // this check every time. Sign them out here (not just redirect) so the
+  // middleware sees no session on the next request: without the signOut,
+  // the middleware would see a valid session and let them through to the
+  // layout, which redirects here, which redirects back — a loop.
+  if (!profile.is_active) {
+    await supabase.auth.signOut();
+    redirect("/login?reason=deactivated");
+  }
+
   return {
     id: profile.id,
     name: profile.name,

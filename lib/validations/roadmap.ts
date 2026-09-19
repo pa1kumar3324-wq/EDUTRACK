@@ -15,6 +15,12 @@ export const volunteerSchema = z.object({
   email: z.string().email(),
   phone: z.string().max(30).optional().or(z.literal("")),
   role: z.enum(["admin", "volunteer"]),
+  // Admin-only: deactivate/reactivate. Deactivation itself goes through
+  // DELETE (see app/api/volunteers/[id]/route.ts), which also revokes live
+  // sessions; this lets that same route's PATCH handle reactivation via
+  // `{ is_active: true }`, since there was previously no way to undo a
+  // deactivation through the UI.
+  is_active: z.boolean().optional(),
   // Profile fields — optional, and only ever set via admin edits of another
   // volunteer's profile here (see lib/validations/volunteerProfile.ts for
   // the shared shape and the self-service path in app/api/profile/route.ts).

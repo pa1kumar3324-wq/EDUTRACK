@@ -6,7 +6,7 @@ export default async function AdminPeopleVolunteersPage() {
   const supabase = await createClient();
 
   const [volunteers, assignments] = await Promise.all([
-    volunteerRepository.list(supabase),
+    volunteerRepository.listAll(supabase),
     supabase.from("assignments").select("volunteer_id"),
   ]);
 

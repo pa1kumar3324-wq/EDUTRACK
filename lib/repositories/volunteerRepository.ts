@@ -32,6 +32,19 @@ export const volunteerRepository = {
     return (data ?? []) as unknown as PublicVolunteer[];
   },
 
+  /**
+   * Full roster including deactivated volunteers — used only by the admin
+   * People > Volunteers table, which needs to show (and offer to
+   * reactivate) deactivated accounts. Every other caller keeps using
+   * list()/listPublic(), which filter to is_active=true on purpose (e.g.
+   * assignment pickers should never offer a deactivated volunteer).
+   */
+  async listAll(supabase: Client) {
+    const { data, error } = await supabase.from("volunteers").select("*").order("name");
+    if (error) throw error;
+    return data ?? [];
+  },
+
   async getById(supabase: Client, id: string) {
     const { data, error } = await supabase.from("volunteers").select("*").eq("id", id).single();
     if (error) throw error;
@@ -40,13 +53,17 @@ export const volunteerRepository = {
 
   async update(supabase: Client, id: string, values: Partial<VolunteerFormValues>) {
     // Profile fields (preferred_name, bio, etc.) get their empty-string ->
-    // null normalization here; name/email/phone/role pass through as-is.
-    const { name, email, phone, role, ...profileFields } = values;
+    // null normalization here; name/email/phone/role/is_active pass
+    // through as-is (is_active must NOT fall into normalizeProfilePatch's
+    // spread below — it only walks a fixed list of string profile fields,
+    // so a boolean landing there would silently be dropped, not saved).
+    const { name, email, phone, role, is_active, ...profileFields } = values;
     const payload = {
       ...(name !== undefined ? { name } : {}),
       ...(email !== undefined ? { email } : {}),
       ...(phone !== undefined ? { phone: phone || null } : {}),
       ...(role !== undefined ? { role } : {}),
+      ...(is_active !== undefined ? { is_active } : {}),
       ...normalizeProfilePatch(profileFields),
     };
     const { data, error } = await supabase

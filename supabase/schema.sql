@@ -39,7 +39,7 @@ create table volunteers (
   created_at          timestamptz not null default now()
 );
 
-comment on table volunteers is 'Every user of the system: admins and volunteers alike, distinguished by role.';
+comment on table volunteers is 'Every user of the system: admins and volunteers alike, distinguished by role. The row with id ffffffff-ffff-ffff-ffff-ffffffffffff is a reserved tombstone (see purge_volunteer() near the end of this file) — never a real volunteer, never surfaced to invite/assignment flows because is_active = false excludes it from list()/listPublic() like any other deactivated row.';
 
 -- ----------------------------------------------------------------------------
 -- STUDENTS
@@ -211,7 +211,7 @@ security definer
 stable
 as $$
   select exists (
-    select 1 from volunteers where id = auth.uid() and role = 'admin'
+    select 1 from volunteers where id = auth.uid() and role = 'admin' and is_active
   );
 $$;
 
@@ -222,8 +222,27 @@ security definer
 stable
 as $$
   select exists (
-    select 1 from assignments
-    where student_id = p_student_id and volunteer_id = auth.uid()
+    select 1 from assignments a
+    join volunteers v on v.id = a.volunteer_id
+    where a.student_id = p_student_id and a.volunteer_id = auth.uid() and v.is_active
+  );
+$$;
+
+-- Write-policy equivalent of is_admin()'s is_active check, for policies
+-- that gate on "is this the volunteer's own row/data" rather than "is this
+-- an admin" — required by progress_insert_own_assignment and
+-- volunteers_self_update below. See
+-- supabase/migrations/010_enforce_deactivation_and_purge.sql for the full
+-- rationale (a deactivated volunteer must lose write access at the RLS
+-- layer, not just in the app).
+create or replace function is_active_user()
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (
+    select 1 from volunteers where id = auth.uid() and is_active
   );
 $$;
 
@@ -233,7 +252,7 @@ create policy "volunteers_select_all" on volunteers for select
 create policy "volunteers_admin_write" on volunteers for all
   using (is_admin()) with check (is_admin());
 create policy "volunteers_self_update" on volunteers for update
-  using (id = auth.uid()) with check (id = auth.uid());
+  using (id = auth.uid() and is_active_user()) with check (id = auth.uid() and is_active_user());
 
 -- RLS is row-level, not column-level: "volunteers_self_update" above lets a
 -- volunteer update their own row, but has no way to say "except role/
@@ -295,7 +314,7 @@ create policy "roadmap_admin_write" on learning_roadmap for all
 -- volunteers may insert only for students assigned to them; admins bypass
 create policy "progress_select_all" on progress for select using (auth.role() = 'authenticated');
 create policy "progress_insert_own_assignment" on progress for insert
-  with check (is_admin() or (volunteer_id = auth.uid() and is_assigned_to(student_id)));
+  with check (is_admin() or (volunteer_id = auth.uid() and is_active_user() and is_assigned_to(student_id)));
 create policy "progress_admin_write" on progress for update using (is_admin());
 create policy "progress_admin_delete" on progress for delete using (is_admin());
 
@@ -731,3 +750,80 @@ $$;
 create trigger trg_stamp_progress_edit
 before update on progress
 for each row execute function stamp_progress_edit();
+
+-- ----------------------------------------------------------------------------
+-- VOLUNTEER HARD-DELETE PURGE
+-- progress.volunteer_id and learning_circles.lead_admin_id are ON DELETE
+-- RESTRICT on purpose (debrief authorship / circle leadership must not
+-- silently vanish), so deleting a volunteer's auth.users row always fails
+-- with a foreign-key-violation unless something else handles it first.
+-- purge_volunteer() is that "something else", for genuine legal erasure
+-- requests only — admins should deactivate by default (reversible,
+-- preserves history). This block mirrors
+-- supabase/migrations/010_enforce_deactivation_and_purge.sql, which is
+-- what existing projects should run. See that file for the full rationale.
+-- ----------------------------------------------------------------------------
+
+-- Reserved tombstone volunteer: authored progress rows get reassigned here
+-- on purge instead of being deleted, so debrief history and the
+-- verification chain survive real erasure. volunteers.id references
+-- auth.users(id), so both rows are required; both inserts are idempotent.
+insert into auth.users (id, email)
+values ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'former-volunteer@edutrack.internal')
+on conflict (id) do nothing;
+
+insert into volunteers (id, name, email, role, is_active)
+values (
+  'ffffffff-ffff-ffff-ffff-ffffffffffff',
+  'Former volunteer',
+  'former-volunteer@edutrack.internal',
+  'volunteer',
+  false
+)
+on conflict (id) do nothing;
+
+create or replace function purge_volunteer(p_volunteer_id uuid)
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  v_tombstone_id constant uuid := 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+begin
+  if auth.role() is distinct from 'service_role' then
+    raise exception 'purge_volunteer can only be called with the service-role key.' using errcode = '42501';
+  end if;
+
+  if p_volunteer_id = v_tombstone_id then
+    raise exception 'Cannot purge the reserved "Former volunteer" tombstone row.' using errcode = '42501';
+  end if;
+
+  if exists (
+    select 1 from learning_circles where lead_admin_id = p_volunteer_id and is_active
+  ) then
+    raise exception 'This volunteer still leads an active Learning Circle — reassign its lead before purging.' using errcode = '23514';
+  end if;
+
+  update progress set volunteer_id = v_tombstone_id where volunteer_id = p_volunteer_id;
+
+  -- Every other volunteer back-reference is already ON DELETE SET NULL, so
+  -- the delete below would null these out on its own — doing it explicitly
+  -- here first makes this function's full effect visible in one place.
+  update assignments set assigned_by = null where assigned_by = p_volunteer_id;
+  update attendance set marked_by = null where marked_by = p_volunteer_id;
+  update student_roadmap_positions set set_by = null where set_by = p_volunteer_id;
+  update learning_circle_members set added_by = null where added_by = p_volunteer_id;
+  update learning_circles set created_by = null where created_by = p_volunteer_id;
+  update progress set verified_by = null where verified_by = p_volunteer_id;
+  update progress set edited_by = null where edited_by = p_volunteer_id;
+
+  delete from volunteers where id = p_volunteer_id;
+  delete from auth.users where id = p_volunteer_id;
+end;
+$$;
+
+comment on function purge_volunteer(uuid) is
+  'Hard-delete for genuine legal erasure requests only — admins should deactivate by default, which is reversible and preserves history. Callable only with the service-role key. Refuses if the volunteer still leads an active Learning Circle. Reassigns their authored progress rows to the reserved "Former volunteer" tombstone instead of deleting them; other volunteer back-references are nulled out explicitly before the row is deleted.';
+
+revoke execute on function purge_volunteer(uuid) from public, anon, authenticated;
+grant execute on function purge_volunteer(uuid) to service_role;

@@ -43,6 +43,35 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Deactivating a volunteer only flips `is_active` in the DB — it doesn't
+  // end whatever session they already hold, so without this check a
+  // deactivated volunteer with a still-valid cookie sails straight through.
+  // This runs on every request, so keep it to the one boolean we need —
+  // do not widen this into a full profile fetch.
+  if (user && !isPublicPath) {
+    const { data: profile } = await supabase
+      .from("volunteers")
+      .select("is_active")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.is_active) {
+      await supabase.auth.signOut();
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("reason", "deactivated");
+      const redirectResponse = NextResponse.redirect(url);
+      // signOut() above clears the auth cookies via this client's setAll,
+      // which lands them on `response` (reassigned by setAll, see above) —
+      // but `response` isn't what we're returning here, so those cleared
+      // cookies need to be copied onto the redirect we actually send back.
+      for (const cookie of response.cookies.getAll()) {
+        redirectResponse.cookies.set(cookie);
+      }
+      return redirectResponse;
+    }
+  }
+
   if (user && request.nextUrl.pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";

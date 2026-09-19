@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Plus, Loader2, UserCog, MoreVertical, ShieldCheck, UserX, Cake, ArrowRight } from "lucide-react";
+import { Plus, Loader2, UserCog, MoreVertical, ShieldCheck, UserX, UserCheck, Cake, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,11 +80,35 @@ export function VolunteersTable({ initialVolunteers, studentCounts }: { initialV
   async function deactivate(v: Volunteer) {
     const res = await fetch(`/api/volunteers/${v.id}`, { method: "DELETE" });
     if (res.ok) {
-      setVolunteers((prev) => prev.filter((x) => x.id !== v.id));
-      toast.success("Volunteer deactivated");
+      const body = await res.json().catch(() => ({}));
+      setVolunteers((prev) => prev.map((x) => (x.id === v.id ? { ...x, is_active: false } : x)));
+      if (body.warning) {
+        toast.warning("Volunteer deactivated", { description: body.warning });
+      } else {
+        toast.success("Volunteer deactivated");
+      }
     } else {
       toast.error("Failed to deactivate volunteer");
       throw new Error("Failed to deactivate volunteer");
+    }
+  }
+
+  async function reactivate(v: Volunteer) {
+    const res = await fetch(`/api/volunteers/${v.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: true }),
+    });
+    if (res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setVolunteers((prev) => prev.map((x) => (x.id === v.id ? { ...x, is_active: true } : x)));
+      if (body.warning) {
+        toast.warning("Volunteer reactivated", { description: body.warning });
+      } else {
+        toast.success(`${displayName(v)} can sign in again`);
+      }
+    } else {
+      toast.error("Failed to reactivate volunteer");
     }
   }
 
@@ -119,7 +143,10 @@ export function VolunteersTable({ initialVolunteers, studentCounts }: { initialV
                           </Badge>
                         )}
                       </div>
-                      <Badge variant={v.role === "admin" ? "default" : "outline"} className="mt-0.5 capitalize">{v.role}</Badge>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        <Badge variant={v.role === "admin" ? "default" : "outline"} className="capitalize">{v.role}</Badge>
+                        {!v.is_active && <Badge variant="destructive">Inactive</Badge>}
+                      </div>
                     </div>
                   </div>
                   <DropdownMenu>
@@ -132,9 +159,15 @@ export function VolunteersTable({ initialVolunteers, studentCounts }: { initialV
                       <DropdownMenuItem onClick={() => toggleRole(v)}>
                         <ShieldCheck className="h-4 w-4" /> {v.role === "admin" ? "Make volunteer" : "Make admin"}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setDeactivateTarget(v)} className="text-destructive focus:text-destructive">
-                        <UserX className="h-4 w-4" /> Deactivate
-                      </DropdownMenuItem>
+                      {v.is_active ? (
+                        <DropdownMenuItem onClick={() => setDeactivateTarget(v)} className="text-destructive focus:text-destructive">
+                          <UserX className="h-4 w-4" /> Deactivate
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={() => reactivate(v)}>
+                          <UserCheck className="h-4 w-4" /> Reactivate
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

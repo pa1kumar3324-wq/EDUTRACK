@@ -32,6 +32,14 @@ function LoginForm() {
         description: "It may be invalid or already used. Ask an admin to resend it if needed.",
       });
     }
+
+    // Forwarded here by requireUser()/requireUserApi()/middleware when a
+    // still-signed-in volunteer's account has been deactivated.
+    if (searchParams.get("reason") === "deactivated") {
+      toast.error("Your account has been deactivated", {
+        description: "Contact an admin if you think this is a mistake.",
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -47,6 +47,11 @@ export async function requireUserApi(): Promise<AuthUser> {
 
   if (error || !profile) throw new ApiError(401, "Not authenticated");
 
+  // A deactivated profile IS authenticated (they have a valid session) —
+  // 401 would be wrong here and would look identical to "not logged in" to
+  // a caller. 403 lets the client tell the two apart.
+  if (!profile.is_active) throw new ApiError(403, "Your account has been deactivated.");
+
   return {
     id: profile.id,
     name: profile.name,
