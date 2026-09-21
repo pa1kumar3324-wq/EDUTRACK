@@ -90,7 +90,7 @@ export function EditProgressDialog({
 
   async function onSave() {
     if (!englishTopic.trim() && !mathTopic.trim()) {
-      toast.error("Keep at least one subject — clear both to remove this entirely instead.");
+      toast.error("Keep at least one subject. Clear both to remove this entirely instead.");
       return;
     }
 
@@ -165,7 +165,7 @@ export function EditProgressDialog({
                   setEnglishTopic(e.target.value);
                   setEnglishRoadmapId(null);
                 }}
-                placeholder="e.g. Reading comprehension — short passages"
+                placeholder="e.g. Reading comprehension: short passages"
               />
             )}
             <StatusPicker

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Plus, Loader2, UserCog, MoreVertical, ShieldCheck, UserX, UserCheck, Cake, ArrowRight } from "lucide-react";
+import { Plus, Loader2, MoreVertical, ShieldCheck, UserX, UserCheck, Cake, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -121,7 +121,7 @@ export function VolunteersTable({ initialVolunteers, studentCounts }: { initialV
       </div>
 
       {volunteers.length === 0 ? (
-        <EmptyState icon={UserCog} title="No volunteers yet" description="Invite your first volunteer to get started." />
+        <EmptyState title="No volunteers yet" description="Invite your first volunteer to get started." />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {volunteers.map((v) => {

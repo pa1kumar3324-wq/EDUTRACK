@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Plus, Loader2, Users, MoreVertical, UserPlus, Trash2, ShieldCheck, Search } from "lucide-react";
+import { Plus, Loader2, MoreVertical, UserPlus, Trash2, ShieldCheck, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -173,7 +173,6 @@ export function LearningCirclesPanel({ initialCircles, volunteers, admins }: Lea
 
       {circles.length === 0 ? (
         <EmptyState
-          icon={Users}
           title="No Learning Circles yet"
           description="Create one to group volunteers under an admin who verifies their class debriefs."
           action={
@@ -326,7 +325,7 @@ export function LearningCirclesPanel({ initialCircles, volunteers, admins }: Lea
               )}
               {admins.length === 0 && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  No admins available — promote a volunteer to admin first.
+                  No admins available. Promote a volunteer to admin first.
                 </p>
               )}
             </div>

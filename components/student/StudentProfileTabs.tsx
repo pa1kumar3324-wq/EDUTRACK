@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Clock, NotebookText } from "lucide-react";
+import { Clock, } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -116,7 +116,6 @@ export function StudentProfileTabs({
         <TabsContent value="timeline" className="mt-4">
           {typedHistory.length === 0 ? (
             <EmptyState
-              icon={NotebookText}
               title="No sessions logged yet"
               description="Once a volunteer submits an update, the full history appears here."
             />
@@ -132,7 +131,7 @@ export function StudentProfileTabs({
                     <span className="font-medium text-foreground">
                       {pendingCount} debrief{pendingCount === 1 ? "" : "s"} awaiting verification.
                     </span>{" "}
-                    Shown below but not yet part of {student.name}&apos;s record — they don&apos;t affect
+                    Shown below but not yet part of {student.name}&apos;s record. They don&apos;t affect
                     levels, roadmap position, or reports until a Learning Circle lead verifies them.
                   </p>
                 </div>
@@ -167,7 +166,6 @@ export function StudentProfileTabs({
         <TabsContent value="weak-areas" className="mt-4">
           {weakAreas.length === 0 ? (
             <EmptyState
-              icon={NotebookText}
               title="No weak areas flagged"
               description="Topics marked 'Needs Help' or 'Didn't Understand' will show up here."
             />
@@ -188,7 +186,6 @@ export function StudentProfileTabs({
         <TabsContent value="homework" className="mt-4">
           {homeworkHistory.length === 0 ? (
             <EmptyState
-              icon={NotebookText}
               title="No homework logged"
               description="Homework assigned during sessions will appear here."
             />
@@ -212,7 +209,6 @@ export function StudentProfileTabs({
         <TabsContent value="volunteers" className="mt-4">
           {assignedVolunteers.length === 0 ? (
             <EmptyState
-              icon={NotebookText}
               title="No volunteers assigned"
               description="An admin can assign volunteers from the admin panel."
             />

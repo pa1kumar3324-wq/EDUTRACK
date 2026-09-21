@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CheckCircle2, Loader2, ShieldCheck, XCircle, ExternalLink, Users } from "lucide-react";
+import { CheckCircle2, Loader2, XCircle, ExternalLink, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +86,6 @@ export function DebriefVerificationQueue({
   if (debriefs.length === 0) {
     return (
       <EmptyState
-        icon={ShieldCheck}
         title="Nothing awaiting verification"
         description={
           canAct
@@ -199,7 +198,7 @@ export function DebriefVerificationQueue({
             <DialogTitle>Send this debrief back?</DialogTitle>
             <DialogDescription>
               It won&apos;t be recorded, and {rejectTarget?.students?.name ?? "the student"}&apos;s
-              roadmap and levels stay as they are. Say what needs fixing — your note shows on the
+              roadmap and levels stay as they are. Say what needs fixing. Your note shows on the
               timeline for the volunteer who filed it.
             </DialogDescription>
           </DialogHeader>
@@ -211,7 +210,7 @@ export function DebriefVerificationQueue({
               rows={3}
               value={rejectNote}
               onChange={(e) => setRejectNote(e.target.value)}
-              placeholder="e.g. The math topic doesn't match what was covered — please re-file with the correct one."
+              placeholder="e.g. The math topic doesn't match what was covered. Please re-file with the correct one."
             />
           </div>
 

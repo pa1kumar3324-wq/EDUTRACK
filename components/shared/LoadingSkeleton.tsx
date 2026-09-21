@@ -23,16 +23,15 @@ export function StudentCardSkeleton() {
   );
 }
 
-export function StatCardSkeleton() {
+export function StatStripSkeleton() {
   return (
-    <Card>
-      <CardContent className="flex items-start justify-between p-5">
-        <div className="space-y-2">
-          <Skeleton className="h-3 w-20" />
+    <div className="flex flex-wrap gap-x-8 gap-y-3 border-y border-border py-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="space-y-2">
           <Skeleton className="h-7 w-12" />
+          <Skeleton className="h-3 w-20" />
         </div>
-        <Skeleton className="h-9 w-9 rounded-xl" />
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
 }

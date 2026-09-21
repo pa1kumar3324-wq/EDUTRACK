@@ -108,10 +108,10 @@ export function ExportPanel() {
             ? "Students"
             : type === "attendance"
               ? attendanceView === "summary"
-                ? "Attendance — Volunteer Summary"
-                : "Attendance — Detailed"
+                ? "Attendance: Volunteer Summary"
+                : "Attendance: Detailed"
               : "Progress";
-        doc.text(`EduTrack — ${typeLabel} Report`, 14, 16);
+        doc.text(`EduTrack: ${typeLabel} Report`, 14, 16);
         if (isAttendance) {
           doc.setFontSize(10);
           doc.text(`Range: ${from} to ${to}`, 14, 22);

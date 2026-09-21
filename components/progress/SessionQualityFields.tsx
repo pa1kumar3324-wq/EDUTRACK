@@ -26,7 +26,7 @@ export function SessionQualityFields({ value, onChange }: { value: SessionObserv
         value={value.biggestSuccess}
         onChange={(v) => onChange({ biggestSuccess: v as SessionObservations["biggestSuccess"] })}
       />
-      {value.biggestSuccess === "other" && (
+      {value.biggestSuccess?.includes("other") && (
         <Textarea
           aria-label="Describe the biggest success"
           className="min-h-14"
@@ -43,7 +43,7 @@ export function SessionQualityFields({ value, onChange }: { value: SessionObserv
         value={value.biggestChallenge}
         onChange={(v) => onChange({ biggestChallenge: v as SessionObservations["biggestChallenge"] })}
       />
-      {value.biggestChallenge === "other" && (
+      {value.biggestChallenge?.includes("other") && (
         <Textarea
           aria-label="Describe the biggest challenge"
           className="min-h-14"

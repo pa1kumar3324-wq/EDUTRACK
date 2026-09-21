@@ -67,7 +67,7 @@ export default async function UpdateProgressPage({
         </Button>
 
         <h1 className="font-display text-xl font-semibold">
-          Update progress — {student.name}
+          Update progress for {student.name}
         </h1>
 
         <p className="text-sm text-muted-foreground">

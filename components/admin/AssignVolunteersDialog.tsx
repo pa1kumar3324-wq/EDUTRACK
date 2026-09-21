@@ -91,7 +91,7 @@ export function AssignVolunteersDialog({
           .map(({ job }) => volunteerNameById.get(job.volunteerId) ?? "a volunteer")
           .join(", ");
         toast.error(`Failed to update: ${names}`, {
-          description: "Other changes were saved — reopen this dialog to retry the failed ones.",
+          description: "Other changes were saved. Reopen this dialog to retry the failed ones.",
         });
       }
       onSaved();

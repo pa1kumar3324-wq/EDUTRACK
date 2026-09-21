@@ -59,7 +59,7 @@ export function SubjectObservationsFields({
       </div>
 
       {/* Conditional: understanding not_understood -> cause */}
-      {value.currentUnderstanding === "not_understood" && (
+      {value.currentUnderstanding?.includes("not_understood") && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-dashed border-border p-2.5">
           <Label htmlFor={id("difficulty-cause")} className="text-xs">
             What seemed to cause the difficulty?
@@ -131,7 +131,7 @@ export function SubjectObservationsFields({
       </div>
 
       {/* Conditional: objective not achieved -> blocker */}
-      {value.lessonObjective === "not_achieved" && (
+      {value.lessonObjective?.includes("not_achieved") && (
         <div className="rounded-lg border border-dashed border-border p-2.5">
           <ScaleSelect
             id={id("objective-blocker")}
@@ -144,7 +144,7 @@ export function SubjectObservationsFields({
       )}
 
       {/* Conditional: partially completed -> what remained */}
-      {value.lessonExecution === "partially_completed" && (
+      {value.lessonExecution?.includes("partially_completed") && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-dashed border-border p-2.5">
           <Label htmlFor={id("incomplete-reason")} className="text-xs">
             What remained incomplete?
@@ -253,7 +253,7 @@ export function SubjectObservationsFields({
       </div>
 
       {/* Conditional: definitely needs revision -> which area */}
-      {value.revisionNeed === "definitely" && (
+      {value.revisionNeed?.includes("definitely") && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-dashed border-border p-2.5">
           <Label htmlFor={id("revision-area")} className="text-xs">
             Which area needs revision?

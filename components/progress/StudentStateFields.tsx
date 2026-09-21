@@ -57,7 +57,7 @@ export function StudentStateFields({ value, onChange }: { value: SessionObservat
       </div>
 
       {/* Conditional: frequently distracted -> source */}
-      {value.attention === "frequently_distracted" && (
+      {value.attention?.includes("frequently_distracted") && (
         <div className="rounded-lg border border-dashed border-border p-2.5">
           <ScaleSelect
             id="distraction-source"
@@ -70,7 +70,7 @@ export function StudentStateFields({ value, onChange }: { value: SessionObservat
       )}
 
       {/* Conditional: very low confidence -> cause */}
-      {value.confidence === "very_low" && (
+      {value.confidence?.includes("very_low") && (
         <div className="flex flex-col gap-1.5 rounded-lg border border-dashed border-border p-2.5">
           <Label htmlFor="confidence-cause" className="text-xs">
             What seemed to affect confidence?

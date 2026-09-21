@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Reorder, useDragControls, useReducedMotion } from "framer-motion";
-import { GripVertical, Loader2, Plus, Trash2, Map } from "lucide-react";
+import { GripVertical, Loader2, Plus, Trash2, } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,7 +92,7 @@ export function RoadmapBuilder({ initialEntries }: { initialEntries: LearningRoa
         )
       );
     } catch {
-      toast.error("Failed to save the new order — refresh to see the last saved order.");
+      toast.error("Failed to save the new order. Refresh to see the last saved order.");
     }
   }
 
@@ -133,7 +133,7 @@ export function RoadmapBuilder({ initialEntries }: { initialEntries: LearningRoa
           </div>
 
           {filtered.length === 0 ? (
-            <EmptyState icon={Map} title="No topics yet" description={`Add the first topic for Grade ${grade} ${subject}.`} />
+            <EmptyState title="No topics yet" description={`Add the first topic for Grade ${grade} ${subject}.`} />
           ) : (
             <Reorder.Group
               as="ol"

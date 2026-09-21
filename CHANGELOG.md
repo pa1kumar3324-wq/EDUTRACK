@@ -1,5 +1,34 @@
 # Sprint Changelog
 
+## Added — Multi-select session observations + admin access to student progress
+
+1. **Multi-select feedback chips.** Every structured observation field in the rich progress form
+   (mood, energy, attention, teaching approach, activity type, biggest success/challenge, and the
+   rest of `lib/types/sessionObservations.ts`) was a single-select `ScaleSelect` chip row — a
+   volunteer could only tick one option per section even when several genuinely applied (e.g. a
+   session that mixed `guided_practice` and `questioning`). `ScaleSelect` now toggles chips
+   in/out of an array instead of picking one, and every observation field is `T[]` instead of `T`
+   end to end: the TS types, the `sessionObservationsSchema` Zod validation (each field is now
+   `.array().optional()`), the three field components' conditional "show more" logic (switched
+   from `=== value` to `?.includes(value)`), and Tsareena's prompt formatter
+   (`components/ai/TsareenaPrompt.ts`), which now joins every selected chip instead of assuming
+   one. `TsareenaContext.ts`'s "does this session have anything recorded" check was also fixed to
+   test `.length` rather than raw truthiness, since an empty array is truthy in JS. No DB migration
+   needed — `session_observations` is a single JSONB column either way.
+2. **Admin access to logging progress.** This was already fully wired at the data layer — the
+   `progress_insert_own_assignment` RLS policy and `POST /api/progress` both special-case
+   `is_admin()`, and `/students/[id]/update` already lets an admin through regardless of
+   assignment. What was missing was a way to actually get there: `components/admin/StudentsTable.tsx`
+   (the admin's student-management screen, at `/admin/people/students`) had "Assign volunteers,"
+   "Edit," and "Remove" on each card but no link at all to a student's profile or update-progress
+   page. Added "View Progress" / "Log Progress" links to each card, mirroring the volunteer
+   dashboard's `StudentCard.tsx`.
+
+**Files touched:** `lib/types/sessionObservations.ts`, `lib/validations/sessionObservations.ts`,
+`components/progress/ScaleSelect.tsx`, `StudentStateFields.tsx`, `SubjectObservationsFields.tsx`,
+`SessionQualityFields.tsx`, `components/ai/TsareenaPrompt.ts`, `TsareenaContext.ts`,
+`components/admin/StudentsTable.tsx`.
+
 ## Added — Progress overview bar + admin debrief editing
 
 Two additions to the student profile, both visible to volunteers and admins:

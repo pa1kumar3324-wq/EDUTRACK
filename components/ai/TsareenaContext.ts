@@ -330,7 +330,14 @@ function toSanitizedObservation(
 ): SanitizedSessionObservation | null {
   if (!obs) return null;
   const subjectObs = obs[subject];
-  if (!subjectObs && !obs.mood && !obs.attention && !obs.participation && !obs.confidence) return null;
+  if (
+    !subjectObs &&
+    !obs.mood?.length &&
+    !obs.attention?.length &&
+    !obs.participation?.length &&
+    !obs.confidence?.length
+  )
+    return null;
   return {
     ...subjectObs,
     mood: obs.mood,

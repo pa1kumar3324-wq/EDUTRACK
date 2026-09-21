@@ -1,9 +1,8 @@
-import { Users, UserCog, CalendarCheck, AlertTriangle } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { analyticsRepository } from "@/lib/repositories/analyticsRepository";
 import { progressRepository } from "@/lib/repositories/progressRepository";
-import { StatCard } from "@/components/dashboard/StatCard";
+import { StatStrip } from "@/components/dashboard/StatCard";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
   WeeklyProgressChart,
@@ -51,14 +50,16 @@ const recentActivity: RecentActivityItem[] = recentRows.map((r: RecentRow) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Analytics" description="Program-wide analytics, at a glance." />
+      <PageHeader title="Analytics" />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Total Students" value={stats.totalStudents} icon={Users} />
-        <StatCard label="Total Volunteers" value={stats.totalVolunteers} icon={UserCog} />
-        <StatCard label="Updated Today" value={stats.studentsUpdatedToday} icon={CalendarCheck} tone="success" />
-        <StatCard label="Needing Revision" value={stats.studentsNeedingRevision} icon={AlertTriangle} tone="destructive" />
-      </div>
+      <StatStrip
+        stats={[
+          { label: "Total students", value: stats.totalStudents },
+          { label: "Total volunteers", value: stats.totalVolunteers },
+          { label: "Updated today", value: stats.studentsUpdatedToday, tone: "success" },
+          { label: "Needing revision", value: stats.studentsNeedingRevision, tone: "destructive" },
+        ]}
+      />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <WeeklyProgressChart data={weeklyProgress} />

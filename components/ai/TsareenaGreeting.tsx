@@ -16,7 +16,7 @@ export function TsareenaGreeting({
     <div
       role="status"
       className={cn(
-        "animate-fade-up pointer-events-auto max-w-[220px] rounded-2xl rounded-br-sm border border-border bg-card px-3.5 py-2.5 text-sm shadow-soft-lg",
+        "animate-scale-in pointer-events-auto max-w-[220px] rounded-2xl rounded-br-sm border border-border bg-card px-3.5 py-2.5 text-sm shadow-soft-lg",
         className
       )}
     >

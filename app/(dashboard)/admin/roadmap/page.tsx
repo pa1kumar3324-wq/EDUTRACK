@@ -13,7 +13,7 @@ export default async function AdminRoadmapPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Learning Roadmap"
-        description="Define the ordered sequence of topics per grade — EduTrack recommends the next lesson automatically."
+        description="Define the ordered sequence of topics per grade. EduTrack recommends the next lesson automatically."
       />
       <RoadmapBuilder initialEntries={entries} />
     </div>

@@ -29,7 +29,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       >
         <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>EduTrack hit a problem</h1>
         <p style={{ maxWidth: 360, color: "#6b5f4f", fontSize: 14 }}>
-          The app failed to load. Try reloading — if this keeps happening, let an admin know.
+          The app failed to load. Try reloading. If this keeps happening, let an admin know.
         </p>
         {error.digest && <p style={{ fontSize: 12, color: "#a89a84" }}>Reference: {error.digest}</p>}
         <button

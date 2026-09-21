@@ -12,21 +12,27 @@ function label(value: string | null | undefined, map?: Record<string, string>): 
   return value.replace(/_/g, " ");
 }
 
+/** Same as label(), but for the multi-select observation fields (arrays of chip values) — joins every selected option instead of assuming one. */
+function labelList(values: string[] | null | undefined, map?: Record<string, string>): string {
+  if (!values || values.length === 0) return "unknown";
+  return values.map((v) => (map?.[v] ? map[v] : v.replace(/_/g, " "))).join(", ");
+}
+
 function formatObservations(obs: SanitizedSessionObservation | null): string {
   if (!obs) return "(none recorded for this session)";
   const lines: string[] = [];
-  if (obs.currentUnderstanding) lines.push(`Understanding: ${label(obs.currentUnderstanding)}`);
-  if (obs.independence) lines.push(`Independence: ${label(obs.independence)}`);
-  if (obs.accuracy) lines.push(`Accuracy: ${label(obs.accuracy)}`);
-  if (obs.lessonExecution) lines.push(`Lesson execution: ${label(obs.lessonExecution)}`);
-  if (obs.lessonObjective) lines.push(`Lesson objective: ${label(obs.lessonObjective)}`);
-  if (obs.teachingApproach) lines.push(`Teaching approach: ${label(obs.teachingApproach)}`);
-  if (obs.progressVsPrevious) lines.push(`Progress vs previous session: ${label(obs.progressVsPrevious)}`);
-  if (obs.revisionNeed) lines.push(`Revision need: ${label(obs.revisionNeed)}`);
-  if (obs.mood) lines.push(`Mood: ${label(obs.mood)}`);
-  if (obs.attention) lines.push(`Attention: ${label(obs.attention)}`);
-  if (obs.participation) lines.push(`Participation: ${label(obs.participation)}`);
-  if (obs.confidence) lines.push(`Confidence: ${label(obs.confidence)}`);
+  if (obs.currentUnderstanding?.length) lines.push(`Understanding: ${labelList(obs.currentUnderstanding)}`);
+  if (obs.independence?.length) lines.push(`Independence: ${labelList(obs.independence)}`);
+  if (obs.accuracy?.length) lines.push(`Accuracy: ${labelList(obs.accuracy)}`);
+  if (obs.lessonExecution?.length) lines.push(`Lesson execution: ${labelList(obs.lessonExecution)}`);
+  if (obs.lessonObjective?.length) lines.push(`Lesson objective: ${labelList(obs.lessonObjective)}`);
+  if (obs.teachingApproach?.length) lines.push(`Teaching approach: ${labelList(obs.teachingApproach)}`);
+  if (obs.progressVsPrevious?.length) lines.push(`Progress vs previous session: ${labelList(obs.progressVsPrevious)}`);
+  if (obs.revisionNeed?.length) lines.push(`Revision need: ${labelList(obs.revisionNeed)}`);
+  if (obs.mood?.length) lines.push(`Mood: ${labelList(obs.mood)}`);
+  if (obs.attention?.length) lines.push(`Attention: ${labelList(obs.attention)}`);
+  if (obs.participation?.length) lines.push(`Participation: ${labelList(obs.participation)}`);
+  if (obs.confidence?.length) lines.push(`Confidence: ${labelList(obs.confidence)}`);
   if (obs.whatWorked) lines.push(`What worked: ${obs.whatWorked}`);
   if (obs.whatDidntWork) lines.push(`What didn't work: ${obs.whatDidntWork}`);
   return lines.length ? lines.join("\n") : "(none recorded for this session)";
@@ -40,8 +46,8 @@ function formatHistoryList(history: RecentProgressSummary[]): string {
         `Session ${i + 1} (${entry.sessionsAgo} session(s) ago)`,
         entry.topic ? `topic: ${entry.topic}` : null,
         entry.understanding ? `understanding: ${label(entry.understanding, UNDERSTANDING_LABEL)}` : null,
-        entry.observations?.progressVsPrevious ? `progress: ${label(entry.observations.progressVsPrevious)}` : null,
-        entry.observations?.revisionNeed ? `revision: ${label(entry.observations.revisionNeed)}` : null,
+        entry.observations?.progressVsPrevious?.length ? `progress: ${labelList(entry.observations.progressVsPrevious)}` : null,
+        entry.observations?.revisionNeed?.length ? `revision: ${labelList(entry.observations.revisionNeed)}` : null,
       ].filter(Boolean);
       return bits.join(" | ");
     })

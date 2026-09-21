@@ -157,7 +157,7 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
             {mathSuggestion && (
               <div className="rounded-xl bg-card px-4 py-3 text-left text-sm shadow-soft">
                 <p className="text-xs font-medium uppercase tracking-wide text-primary">
-                  {englishSuggestion ? "Math — Suggested Next Lesson" : "Suggested Next Lesson"}
+                  {englishSuggestion ? "Math: suggested next lesson" : "Suggested next lesson"}
                 </p>
                 <p className="mt-1 text-foreground">{mathSuggestion}</p>
               </div>
@@ -165,7 +165,7 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
             {englishSuggestion && (
               <div className="rounded-xl bg-card px-4 py-3 text-left text-sm shadow-soft">
                 <p className="text-xs font-medium uppercase tracking-wide text-primary">
-                  {mathSuggestion ? "English — Suggested Next Lesson" : "Suggested Next Lesson"}
+                  {mathSuggestion ? "English: suggested next lesson" : "Suggested next lesson"}
                 </p>
                 <p className="mt-1 text-foreground">{englishSuggestion}</p>
               </div>
@@ -181,7 +181,7 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Student state today</CardTitle>
-          <CardDescription>A quick read on mood, energy, and focus — tap to select, skip anything that doesn't apply.</CardDescription>
+          <CardDescription>A quick read on mood, energy, and focus. Tap to select, skip anything that doesn't apply.</CardDescription>
         </CardHeader>
         <CardContent>
           <StudentStateFields value={observations} onChange={updateObservations} />
@@ -214,7 +214,7 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
                 <>
                   <Input id="english_topic" placeholder="e.g. Equivalent fractions" {...register("english_topic")} />
                   <p className="text-xs text-muted-foreground">
-                    No roadmap defined yet for Grade {student.grade} English — logging as free text.
+                    No roadmap defined yet for Grade {student.grade} English. Logging as free text.
                   </p>
                 </>
               )}
@@ -228,7 +228,7 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
                 onChange={(v) => setValue("english_status", v as ProgressFormValues["english_status"])}
               />
             </div>
-            <Disclosure title="Session details" subtitle="optional — richer context for Tsareena">
+            <Disclosure title="Session details" subtitle="optional, richer context for Tsareena">
               <SubjectObservationsFields
                 subjectId="english"
                 value={observations.english ?? {}}
@@ -263,7 +263,7 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
                 <>
                   <Input id="math_topic" placeholder="e.g. Long division" {...register("math_topic")} />
                   <p className="text-xs text-muted-foreground">
-                    No roadmap defined yet for Grade {student.grade} Math — logging as free text.
+                    No roadmap defined yet for Grade {student.grade} Math. Logging as free text.
                   </p>
                 </>
               )}
@@ -277,7 +277,7 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
                 onChange={(v) => setValue("math_status", v as ProgressFormValues["math_status"])}
               />
             </div>
-            <Disclosure title="Session details" subtitle="optional — richer context for Tsareena">
+            <Disclosure title="Session details" subtitle="optional, richer context for Tsareena">
               <SubjectObservationsFields
                 subjectId="math"
                 value={observations.math ?? {}}
@@ -295,7 +295,7 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Session quality</CardTitle>
-          <CardDescription>How the session went overall — optional, but useful for spotting patterns over time.</CardDescription>
+          <CardDescription>How the session went overall. Optional, but useful for spotting patterns over time.</CardDescription>
         </CardHeader>
         <CardContent>
           <SessionQualityFields value={observations} onChange={updateObservations} />
@@ -312,11 +312,11 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
             <Label htmlFor="notes">Notes for the next volunteer</Label>
             <Textarea
               id="notes"
-              placeholder="Anything the next volunteer should know — attention span today, what helped, what didn't..."
+              placeholder="Anything the next volunteer should know: attention span today, what helped, what didn't..."
               {...register("notes")}
             />
             <p className="text-xs text-muted-foreground">
-              May be shown to Tsareena (EduTrack&apos;s AI assistant) — only this student&apos;s own name is
+              May be shown to Tsareena (EduTrack&apos;s AI assistant). Only this student&apos;s own name is
               automatically removed before that happens, so avoid naming siblings, guardians, or other
               students here.
             </p>

@@ -1,43 +1,30 @@
-import type { LucideIcon } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { AnimatedNumber } from "@/components/shared/AnimatedNumber";
 import { cn } from "@/lib/utils";
 
-interface StatCardProps {
+interface Stat {
   label: string;
   value: number;
-  icon: LucideIcon;
   tone?: "default" | "warning" | "destructive" | "success";
-  hint?: string;
 }
 
-const toneClasses: Record<NonNullable<StatCardProps["tone"]>, string> = {
-  default: "bg-primary/10 text-primary",
-  warning: "bg-warning/15 text-warning",
-  destructive: "bg-destructive/15 text-destructive",
-  success: "bg-success/15 text-success",
+const toneClasses: Record<NonNullable<Stat["tone"]>, string> = {
+  default: "text-foreground",
+  warning: "text-warning",
+  destructive: "text-destructive",
+  success: "text-success",
 };
 
-export function StatCard({ label, value, icon: Icon, tone = "default", hint }: StatCardProps) {
+/** A row of key numbers. Sits in a header strip, not as separate cards. */
+export function StatStrip({ stats }: { stats: Stat[] }) {
   return (
-    <Card className="group animate-fade-up transition-shadow hover:shadow-soft-lg">
-      <CardContent className="flex items-start justify-between p-5">
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-1.5 font-display text-2xl font-semibold tabular-nums">
-            <AnimatedNumber value={value} />
+    <div className="flex flex-wrap gap-x-8 gap-y-3 border-y border-border py-4">
+      {stats.map((stat) => (
+        <div key={stat.label}>
+          <p className={cn("font-display text-2xl font-semibold tabular-nums", toneClasses[stat.tone ?? "default"])}>
+            {stat.value.toLocaleString()}
           </p>
-          {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+          <p className="text-sm text-muted-foreground">{stat.label}</p>
         </div>
-        <div
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3",
-            toneClasses[tone]
-          )}
-        >
-          <Icon className="h-4.5 w-4.5" />
-        </div>
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
 }

@@ -43,7 +43,7 @@ export function StudentJourneyChart({ history, subject }: { history: Progress[];
             fontSize: 12,
           }}
           formatter={(value: number, _name, item) => [
-            `${SCORE_LABEL[value]} — ${item.payload.topic ?? ""}`,
+            `${SCORE_LABEL[value]}: ${item.payload.topic ?? ""}`,
             subject === "english" ? "English" : "Math",
           ]}
         />

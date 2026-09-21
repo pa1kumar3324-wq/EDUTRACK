@@ -119,7 +119,7 @@ export function Tsareena({ userId }: { userId: string }) {
         store.addMessage({
           id: crypto.randomUUID(),
           role: "assistant",
-          text: "I can dig deeper into that once you connect Gemini. Open Settings above to add your own API key — completely optional, and it never leaves your browser.",
+          text: "I can dig deeper into that once you connect Gemini. Open Settings above to add your own API key. It's completely optional, and it never leaves your browser.",
           createdAt: Date.now(),
         });
         return;

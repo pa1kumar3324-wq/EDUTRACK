@@ -134,7 +134,7 @@ export function RoadmapPositionControl({ studentId, grade, roadmap, currentBasel
             <DialogDescription>
               Choose where this student&apos;s roadmap should begin in Grade {grade}. Existing progress history is
               preserved. Once a session is logged at or beyond this topic, automatic recommendation takes over and
-              advances the student through the roadmap as usual — this isn&apos;t a permanent pin.
+              advances the student through the roadmap as usual. This isn&apos;t a permanent pin.
             </DialogDescription>
           </DialogHeader>
 
@@ -198,7 +198,7 @@ export function RoadmapPositionControl({ studentId, grade, roadmap, currentBasel
           size="sm"
           onClick={() => onClear(s.value)}
           disabled={isClearing === s.value}
-          title={`Clear ${s.label} starting point — use automatic progress tracking`}
+          title={`Clear ${s.label} starting point: use automatic progress tracking`}
         >
           {isClearing === s.value ? <Loader2 className="animate-spin" /> : <X className="h-3.5 w-3.5" />}
           Clear {s.label} starting point

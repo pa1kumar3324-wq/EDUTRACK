@@ -3,8 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,26 +91,9 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-sm"
-      >
-        <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow">
-            <GraduationCap className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="font-display text-xl font-semibold">EduTrack</h1>
-            <p className="text-sm text-muted-foreground">Continuity for every child, every weekend.</p>
-          </div>
-        </div>
+      <div className="w-full max-w-sm">
+        <h1 className="mb-8 font-display text-xl font-semibold">EduTrack</h1>
 
         <Card>
           <CardHeader>
@@ -160,7 +142,7 @@ function LoginForm() {
         <p className="mt-6 text-center text-xs text-muted-foreground">
           First time? Ask an admin to invite you from the Volunteers panel.
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }

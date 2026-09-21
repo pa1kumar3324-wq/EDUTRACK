@@ -51,7 +51,7 @@ export function TsareenaKeySetup({ status, currentKeyMasked, onConnect, onForget
     return (
       <div className="flex flex-col gap-2 rounded-xl border border-success/30 bg-success/5 p-3">
         <div className="flex items-center gap-2 text-sm font-medium text-success">
-          <ShieldCheck className="h-4 w-4" /> Gemini — Connected
+          <ShieldCheck className="h-4 w-4" /> Gemini connected
         </div>
         {currentKeyMasked && <p className="font-mono text-xs text-muted-foreground">{currentKeyMasked}</p>}
         <p className="text-xs text-muted-foreground">
@@ -123,10 +123,10 @@ export function TsareenaKeySetup({ status, currentKeyMasked, onConnect, onForget
         Get a Gemini API key <ExternalLink className="h-3 w-3" />
       </a>
       <p className="text-xs text-muted-foreground">
-        Your questions — along with the current student&apos;s progress notes, session observations, and
-        roadmap context (with the student&apos;s name removed) — are sent directly to Gemini using the key you
-        provide. EduTrack does not store your personal Gemini API key. Gemini processes requests under Google&apos;s
-        own applicable policies.
+        Your questions are sent directly to Gemini using the key you provide, along with the current
+        student&apos;s progress notes, session observations, and roadmap context (with the student&apos;s name
+        removed). EduTrack does not store your personal Gemini API key. Gemini processes requests under
+        Google&apos;s own applicable policies.
       </p>
     </div>
   );

@@ -115,7 +115,7 @@ export function AttendanceMarker({ volunteers }: { volunteers: Volunteer[] }) {
       </div>
 
       {volunteers.length === 0 ? (
-        <EmptyState icon={CalendarCheck} title="No volunteers yet" description="Invite volunteers before taking attendance." />
+        <EmptyState title="No volunteers yet" description="Invite volunteers before taking attendance." />
       ) : (
         <Card>
           <CardContent className="divide-y divide-border p-0">

@@ -13,7 +13,7 @@ export default async function ReportsCoverageLayout({ children }: { children: Re
 
   return (
     <div className="flex flex-col gap-0">
-      <PageHeader title="Reports & Coverage" description="Weekend coverage, alerts, and data exports in one place." />
+      <PageHeader title="Reports & Coverage" />
       <TabNav items={tabs} />
       {children}
     </div>

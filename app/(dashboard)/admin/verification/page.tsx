@@ -1,4 +1,3 @@
-import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -68,7 +67,6 @@ export default async function AdminVerificationPage({
 
       {circles.length === 0 ? (
         <EmptyState
-          icon={ShieldCheck}
           title="No Learning Circles yet"
           description="Verification only applies to volunteers in a Learning Circle. Create one to start reviewing debriefs before they're recorded."
           action={

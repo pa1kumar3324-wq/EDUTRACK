@@ -7,7 +7,6 @@ import { format, parseISO, addDays, isAfter } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AnimatedNumber } from "@/components/shared/AnimatedNumber";
 import { initials, cn } from "@/lib/utils";
 import type { WeekendCoverage } from "@/lib/types";
 
@@ -31,7 +30,7 @@ export function CoverageBoard({ coverage }: { coverage: WeekendCoverage }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card className="grain overflow-hidden">
+      <Card className="overflow-hidden">
         <CardContent className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-stretch sm:justify-between">
           <div className="flex items-center gap-3">
             <Button variant="outline" size="icon" onClick={() => navigate(-1)} disabled={isPending} aria-label="Previous weekend">
@@ -64,19 +63,19 @@ export function CoverageBoard({ coverage }: { coverage: WeekendCoverage }) {
                 />
               </svg>
               <span className="absolute font-display text-xl font-bold">
-                <AnimatedNumber value={coverage.coveragePct} suffix="%" />
+                {coverage.coveragePct}%
               </span>
             </div>
             <div className="flex flex-col gap-1 text-sm">
               <p>
                 <span className="font-display text-xl font-semibold text-success">
-                  <AnimatedNumber value={coverage.updatedCount} />
+                  {coverage.updatedCount}
                 </span>{" "}
                 <span className="text-muted-foreground">updated</span>
               </p>
               <p>
                 <span className="font-display text-xl font-semibold text-destructive">
-                  <AnimatedNumber value={coverage.missingCount} />
+                  {coverage.missingCount}
                 </span>{" "}
                 <span className="text-muted-foreground">missing</span>
               </p>

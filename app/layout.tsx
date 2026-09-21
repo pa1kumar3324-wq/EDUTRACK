@@ -18,9 +18,9 @@ import "@fontsource/plus-jakarta-sans/700.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "EduTrack — Volunteer Learning Management System",
+  title: "EduTrack",
   description:
-    "Continuity tracking for NGO tutoring programs — every volunteer knows exactly what a child learned last, and what's next.",
+    "Continuity tracking for NGO tutoring programs. Volunteers see what a child learned last and what's next.",
   manifest: "/manifest.json",
   appleWebApp: { title: "EduTrack", statusBarStyle: "default" },
 };

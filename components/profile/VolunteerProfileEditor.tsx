@@ -148,7 +148,7 @@ export function VolunteerProfileEditor({
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="date_of_birth">Date of birth</Label>
             <Input id="date_of_birth" type="date" {...register("date_of_birth")} />
-            <p className="text-xs text-muted-foreground">Only used for birthday recognition later — your age is never shown.</p>
+            <p className="text-xs text-muted-foreground">Only used for birthday recognition later. Your age is never shown.</p>
             {errors.date_of_birth && <p className="text-xs text-destructive">{errors.date_of_birth.message}</p>}
           </div>
 

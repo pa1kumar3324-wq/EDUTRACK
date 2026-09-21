@@ -104,63 +104,73 @@ export type ObjectiveBlocker =
 
 export type DistractionSource = "peers" | "environment" | "device" | "low_energy" | "personal" | "other";
 
+/**
+ * Every ScaleSelect-backed field below is a MULTI-select — a volunteer (or
+ * admin) can tick more than one chip per section (e.g. a session can use
+ * both "guided_practice" AND "questioning" as its teaching approach). Each
+ * field is therefore an array of the enum, not a single value. An absent or
+ * empty array means "not answered", same as `undefined` did before this was
+ * multi-select — always check `.length` (or `?.includes(...)`), never treat
+ * the field as a scalar.
+ */
+
 /** Applies to one subject (english or math) within a session. */
 export interface SubjectSessionObservations {
   // Learning observations
-  priorUnderstanding?: CurrentUnderstanding;
-  currentUnderstanding?: CurrentUnderstanding;
-  difficulty?: Difficulty;
-  independence?: Independence;
-  accuracy?: Accuracy;
-  explainAbility?: ExplainAbility;
-  applyAbility?: ApplyAbility;
-  difficultyCause?: string; // conditional: currentUnderstanding === "not_understood"
+  priorUnderstanding?: CurrentUnderstanding[];
+  currentUnderstanding?: CurrentUnderstanding[];
+  difficulty?: Difficulty[];
+  independence?: Independence[];
+  accuracy?: Accuracy[];
+  explainAbility?: ExplainAbility[];
+  applyAbility?: ApplyAbility[];
+  difficultyCause?: string; // conditional: currentUnderstanding includes "not_understood"
 
   // Lesson execution
-  lessonExecution?: LessonExecution;
-  lessonObjective?: LessonObjective;
-  objectiveBlocker?: ObjectiveBlocker; // conditional: lessonObjective === "not_achieved"
-  incompleteReason?: string; // conditional: lessonExecution === "partially_completed"
-  timeAvailability?: TimeAvailability;
-  activitiesCompleted?: ActivitiesCompleted;
-  lessonChanges?: LessonChanges;
+  lessonExecution?: LessonExecution[];
+  lessonObjective?: LessonObjective[];
+  objectiveBlocker?: ObjectiveBlocker[]; // conditional: lessonObjective includes "not_achieved"
+  incompleteReason?: string; // conditional: lessonExecution includes "partially_completed"
+  timeAvailability?: TimeAvailability[];
+  activitiesCompleted?: ActivitiesCompleted[];
+  lessonChanges?: LessonChanges[];
 
   // Teaching observations
-  teachingApproach?: TeachingApproach;
-  activityType?: ActivityType;
-  explanationEffectiveness?: ExplanationEffectiveness;
+  teachingApproach?: TeachingApproach[];
+  activityType?: ActivityType[];
+  explanationEffectiveness?: ExplanationEffectiveness[];
   whatWorked?: string;
   whatDidntWork?: string;
   neededAdditionalExamples?: boolean;
   revisionRequired?: boolean;
 
   // Outcome
-  progressVsPrevious?: ProgressVsPrevious;
-  revisionNeed?: RevisionNeed;
-  revisionArea?: string; // conditional: revisionNeed === "definitely"
-  confidenceMovingForward?: ConfidenceLevel;
+  progressVsPrevious?: ProgressVsPrevious[];
+  revisionNeed?: RevisionNeed[];
+  revisionArea?: string; // conditional: revisionNeed includes "definitely"
+  confidenceMovingForward?: ConfidenceLevel[];
   recommendedFocusNext?: string;
 }
 
 export interface SessionObservations {
   // Student state (session-level, not per-subject)
-  mood?: Mood;
-  energy?: Energy;
-  attention?: Attention;
-  distractionSource?: DistractionSource; // conditional: attention === "frequently_distracted"
-  participation?: Participation;
-  confidence?: ConfidenceLevel;
-  confidenceCause?: string; // conditional: confidence === "very_low"
+  mood?: Mood[];
+  energy?: Energy[];
+  attention?: Attention[];
+  distractionSource?: DistractionSource[]; // conditional: attention includes "frequently_distracted"
+  participation?: Participation[];
+  confidence?: ConfidenceLevel[];
+  confidenceCause?: string; // conditional: confidence includes "very_low"
 
   // Per-subject observations
   english?: SubjectSessionObservations;
   math?: SubjectSessionObservations;
 
   // Session quality (session-level)
-  overallEffectiveness?: SessionEffectiveness;
-  biggestSuccess?: BiggestSuccess;
+  overallEffectiveness?: SessionEffectiveness[];
+  biggestSuccess?: BiggestSuccess[];
   biggestSuccessOther?: string;
-  biggestChallenge?: BiggestChallenge;
+  biggestChallenge?: BiggestChallenge[];
   biggestChallengeOther?: string;
 
   // Free text, kept small and optional

@@ -14,7 +14,7 @@ export default async function PeopleLayout({ children }: { children: React.React
 
   return (
     <div className="flex flex-col gap-0">
-      <PageHeader title="People" description="Students, volunteers, and attendance in one workspace." />
+      <PageHeader title="People" />
       <TabNav items={tabs} />
       {children}
     </div>

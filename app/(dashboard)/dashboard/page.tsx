@@ -1,17 +1,10 @@
-import {
-  Users,
-  Users as UsersIcon,
-  CalendarCheck,
-  ListTodo,
-  AlertTriangle,
-} from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { studentRepository } from "@/lib/repositories/studentRepository";
 import { progressRepository } from "@/lib/repositories/progressRepository";
 import { analyticsRepository } from "@/lib/repositories/analyticsRepository";
 import { attendanceRepository } from "@/lib/repositories/attendanceRepository";
-import { StatCard } from "@/components/dashboard/StatCard";
+import { StatStrip } from "@/components/dashboard/StatCard";
 import { StudentCard } from "@/components/dashboard/StudentCard";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { AttendancePieChart } from "@/components/dashboard/AttendancePieChart";
@@ -114,44 +107,16 @@ export default async function VolunteerDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-xl font-semibold">
-          Welcome back, {user.displayName.split(" ")[0]}
-        </h1>
+      <h1 className="font-display text-xl font-semibold">Dashboard</h1>
 
-        <p className="text-sm text-muted-foreground">
-          Here's exactly where each of your students left off.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          label="Students Assigned"
-          value={stats.studentsAssigned}
-          icon={Users}
-        />
-
-        <StatCard
-          label="Updated This Week"
-          value={stats.studentsUpdatedThisWeek}
-          icon={CalendarCheck}
-          tone="success"
-        />
-
-        <StatCard
-          label="Pending Updates"
-          value={stats.pendingUpdates}
-          icon={ListTodo}
-          tone="warning"
-        />
-
-        <StatCard
-          label="Needing Revision"
-          value={stats.studentsNeedingRevision}
-          icon={AlertTriangle}
-          tone="destructive"
-        />
-      </div>
+      <StatStrip
+        stats={[
+          { label: "Students assigned", value: stats.studentsAssigned },
+          { label: "Updated this week", value: stats.studentsUpdatedThisWeek, tone: "success" },
+          { label: "Pending updates", value: stats.pendingUpdates, tone: "warning" },
+          { label: "Needing revision", value: stats.studentsNeedingRevision, tone: "destructive" },
+        ]}
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div>
@@ -161,9 +126,8 @@ export default async function VolunteerDashboardPage() {
 
           {studentsWithProgress.length === 0 ? (
             <EmptyState
-              icon={UsersIcon}
               title="No students assigned yet"
-              description="Once an admin assigns students to you, they'll appear here as cards — no searching required."
+              description="An admin will assign students to you."
             />
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-2">

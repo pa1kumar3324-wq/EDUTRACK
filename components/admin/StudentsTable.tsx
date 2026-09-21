@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search, Plus, GraduationCap, Users, MoreVertical, UserPlus, Pencil, Trash2 } from "lucide-react";
+import { Search, Plus, GraduationCap, MoreVertical, UserPlus, Pencil, Trash2, NotebookPen, ArrowUpRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -133,7 +134,7 @@ export function StudentsTable({
           ))}
         </div>
       ) : students.length === 0 ? (
-        <EmptyState icon={Users} title="No students found" description="Try adjusting your search or filters, or add a new student." />
+        <EmptyState title="No students found" description="Try adjusting your search or filters, or add a new student." />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {students.map((student) => {
@@ -191,6 +192,23 @@ export function StudentsTable({
                   ) : (
                     <p className="text-sm text-muted-foreground">None assigned yet</p>
                   )}
+                </div>
+
+                {/* Admins bypass the assignment check server-side (progress_insert_own_assignment
+                    RLS policy, and canUpdate on the student profile page), but until now this was
+                    the only student-management screen with no link at all to a student's profile —
+                    an admin who wanted to log or review a session had to already know the URL. */}
+                <div className="mt-auto flex gap-2 pt-1">
+                  <Button asChild variant="outline" size="sm" className="flex-1">
+                    <Link href={`/students/${student.id}`}>
+                      View Progress <ArrowUpRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" className="flex-1">
+                    <Link href={`/students/${student.id}/update`}>
+                      <NotebookPen className="h-3.5 w-3.5" /> Log Progress
+                    </Link>
+                  </Button>
                 </div>
               </Card>
             );

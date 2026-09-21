@@ -9,11 +9,11 @@ export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
+        <CardTitle>Recent activity</CardTitle>
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
-          <EmptyState icon={Activity} title="No activity yet" description="Progress updates will show up here as they're logged." />
+          <EmptyState title="No activity yet" description="Progress updates will show up here as they're logged." />
         ) : (
           <ul className="divide-y divide-border">
             {items.map((item) => (
@@ -23,7 +23,7 @@ export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
                     <Link href={`/students/${item.studentId}`} className="font-medium hover:underline">
                       {item.studentName}
                     </Link>{" "}
-                    <span className="text-muted-foreground">— {item.summary}</span>
+                    <span className="text-muted-foreground">: {item.summary}</span>
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     by {item.volunteerName} · {formatRelativeDate(item.createdAt)}

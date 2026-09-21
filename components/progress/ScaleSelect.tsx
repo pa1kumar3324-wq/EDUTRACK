@@ -13,6 +13,10 @@ export interface ScaleOption {
  * form (§34). Deliberately terse: short labels, no icons, wraps onto a
  * second line rather than growing the row's height, so a form with a dozen
  * of these stays scannable instead of turning into a giant questionnaire.
+ *
+ * Multi-select: a section isn't limited to one chip — tapping a chip toggles
+ * it in/out of `value` independently of the others, so a volunteer (or
+ * admin) can pick as many options per section as actually apply.
  */
 export function ScaleSelect({
   options,
@@ -22,26 +26,36 @@ export function ScaleSelect({
   id,
 }: {
   options: ScaleOption[];
-  value?: string;
-  onChange: (value: string) => void;
+  value?: string[];
+  onChange: (value: string[]) => void;
   label: string;
   id: string;
 }) {
+  const selected = value ?? [];
+
+  function toggle(optionValue: string) {
+    onChange(
+      selected.includes(optionValue)
+        ? selected.filter((v) => v !== optionValue)
+        : [...selected, optionValue]
+    );
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
       <span id={`${id}-label`} className="text-xs font-medium text-muted-foreground">
         {label}
       </span>
-      <div role="radiogroup" aria-labelledby={`${id}-label`} className="flex flex-wrap gap-1.5">
+      <div role="group" aria-labelledby={`${id}-label`} className="flex flex-wrap gap-1.5">
         {options.map((opt) => {
-          const active = value === opt.value;
+          const active = selected.includes(opt.value);
           return (
             <button
               key={opt.value}
               type="button"
-              role="radio"
+              role="checkbox"
               aria-checked={active}
-              onClick={() => onChange(opt.value)}
+              onClick={() => toggle(opt.value)}
               className={cn(
                 "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 active

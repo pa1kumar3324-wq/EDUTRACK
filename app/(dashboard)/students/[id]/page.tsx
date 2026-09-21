@@ -244,7 +244,7 @@ export default async function StudentProfilePage({
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">
-              📘 {englishPosition?.source === "baseline" ? "Starting Point" : "Recommended Next"} — English
+              English {englishPosition?.source === "baseline" ? "starting point" : "recommended next"}
             </CardTitle>
           </CardHeader>
 
@@ -282,7 +282,7 @@ export default async function StudentProfilePage({
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">
-              🔢 {mathPosition?.source === "baseline" ? "Starting Point" : "Recommended Next"} — Math
+              Math {mathPosition?.source === "baseline" ? "starting point" : "recommended next"}
             </CardTitle>
           </CardHeader>
 
