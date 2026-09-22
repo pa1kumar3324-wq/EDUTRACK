@@ -2,9 +2,7 @@
 -- Manual verification for
 -- supabase/migrations/010_enforce_deactivation_and_purge.sql
 --
--- This sandbox has no network access to a live Supabase project, so this
--- fix could not be executed against real Postgres/PostgREST as part of this
--- change — see the final report. Run this in the Supabase SQL editor (as
+-- Run this in the Supabase SQL editor (as
 -- the `postgres` superuser, which can freely impersonate other roles via
 -- `set local role`/`set local "request.jwt.claims"`) against a project
 -- with schema.sql + this migration applied, to confirm the fix before

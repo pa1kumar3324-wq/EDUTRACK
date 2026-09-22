@@ -17,9 +17,9 @@ export default defineConfig([{
         // "fetch data in an Effect" / react-hook-form `watch()` patterns
         // used throughout this codebase (see React's own docs on
         // data-fetching Effects). None of the flagged call sites are bugs;
-        // adopting the Compiler is a separate, deliberate migration this
-        // remediation pass does not otherwise touch, so these are disabled
-        // here rather than rewriting ~10 unrelated effect call sites.
+        // adopting the Compiler is a separate, deliberate migration we are
+        // not taking on right now, so these are disabled rather than
+        // rewriting ~10 unrelated effect call sites.
         "react-hooks/set-state-in-effect": "off",
         "react-hooks/incompatible-library": "off",
     },

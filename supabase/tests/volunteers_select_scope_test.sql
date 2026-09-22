@@ -8,9 +8,7 @@
 -- independent guard: an anonymous request should never be able to read the
 -- volunteers table at all, regardless of what it tries to write.
 --
--- This sandbox has no network access to a live Supabase project, so this
--- could not be executed against real Postgres/PostgREST as part of this
--- change. Run this in the Supabase SQL editor (as the `postgres` superuser)
+-- Run this in the Supabase SQL editor (as the `postgres` superuser)
 -- against a project with schema.sql + migration 007 applied, to confirm
 -- before deploying.
 --
@@ -53,7 +51,8 @@ end $$;
 -- ----------------------------------------------------------------------------
 -- TEST 2: an authenticated non-admin volunteer CAN select from volunteers
 -- (this policy only restricts anon; every authenticated user retaining
--- SELECT access is expected here — see H1 for the separate PII-projection
+-- SELECT access is expected here — see lib/types/database.ts's
+-- PublicVolunteer for the separate PII-projection
 -- fix that narrows *which fields* non-admins should see).
 -- ----------------------------------------------------------------------------
 reset role;

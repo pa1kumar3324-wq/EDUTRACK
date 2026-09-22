@@ -29,7 +29,7 @@ import ExcelJS from "exceljs";
  */
 export async function GET(request: Request) {
   try {
-    // Rate limited (M6): exports run unbounded queries (up to 1000 rows) and
+    // Rate limited: exports run unbounded queries (up to 1000 rows) and
     // generate files server-side — 10 requests/minute per IP is generous
     // for a human clicking "Export" but blunts a scripted hammering loop.
     const { allowed, retryAfterSeconds } = checkRateLimit(`export:${getClientIp(request)}`, 10, 60_000);

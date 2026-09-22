@@ -8,12 +8,11 @@
  * (e.g. several Vercel serverless/edge regions, or several containers
  * behind a load balancer). If this app is deployed to more than one
  * instance, replace this with a shared store (Upstash Redis, Vercel KV,
- * or a platform-level rate limiter) before relying on it. Documented here
- * per M6's requirement to "pick whichever fits the actual hosting setup,
- * and document the choice" — an in-memory limiter was chosen because this
- * codebase has no existing dependency on any shared cache/store, and
- * adding one is a bigger, separate infrastructure decision than this
- * remediation pass should make unilaterally.
+ * or a platform-level rate limiter) before relying on it. An in-memory
+ * limiter was chosen here because this codebase has no existing dependency
+ * on any shared cache/store, and adding one is a bigger, separate
+ * infrastructure decision to make deliberately, not as a side effect of
+ * adding rate limiting.
  */
 
 type Bucket = { count: number; resetAt: number };

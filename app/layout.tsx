@@ -4,8 +4,7 @@ import { Toaster } from "sonner";
 
 // Self-hosted fonts (fontsource) — ships the actual font files as static assets so the
 // production build never depends on reaching fonts.googleapis.com/fonts.gstatic.com at
-// build time. This is what caused `next build` to fail in network-restricted sandboxes;
-// self-hosting also shaves a render-blocking external request off every real page load.
+// build time. Also shaves a render-blocking external request off every real page load.
 import "@fontsource/fraunces/400.css";
 import "@fontsource/fraunces/500.css";
 import "@fontsource/fraunces/600.css";

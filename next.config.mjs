@@ -14,9 +14,8 @@ const nextConfig = {
     //  - api.dicebear.com: generated fallback avatars (img-src).
     //  - generativelanguage.googleapis.com: Tsareena's direct
     //    browser-to-Gemini calls (connect-src) — see components/ai/geminiClient.ts.
-    // NOT tested against a running dev server or deployed build in this
-    // sandbox — verify the Tsareena chat flow and avatar images still load
-    // before shipping; an overly strict CSP will silently break both.
+    // If you tighten this further, re-verify the Tsareena chat flow and
+    // avatar images still load — an overly strict CSP will silently break both.
     const csp = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline'",

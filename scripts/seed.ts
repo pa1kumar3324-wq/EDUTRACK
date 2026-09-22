@@ -24,7 +24,7 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
   process.exit(1);
 }
 
-// Guard rails (M7): this script creates real Supabase Auth users with a
+// Guard rails: this script creates real Supabase Auth users with a
 // known password and writes sample data. Two safeguards against running it
 // against a project that isn't an empty scratch project:
 //  1. Requires an explicit `--confirm-seed` flag — `npm run seed` alone

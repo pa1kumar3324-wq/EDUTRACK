@@ -60,7 +60,8 @@ export type Volunteer = {
  * `date_of_birth` — migration 006 documents these as visible only to the
  * volunteer themself or an admin. `email`, `bio`, `teaching_interests`, and
  * `fun_fact` are intentionally team-visible per the volunteer profile
- * page's design. See H1 in the remediation notes for the paths this closes.
+ * page's design. Use this projection instead of the full `Volunteer` row
+ * anywhere a non-admin/non-self viewer can see the result.
  */
 export type PublicVolunteer = Pick<
   Volunteer,

@@ -14,7 +14,7 @@ import type { SearchResultItem } from "@/lib/types";
  */
 export async function GET(request: Request) {
   try {
-    // Rate limited (M6): this runs an ILIKE query per keystroke from the
+    // Rate limited: this runs an ILIKE query per keystroke from the
     // client, so it's the cheapest endpoint to abuse for load. 60
     // requests/minute per IP comfortably covers real typing speed.
     const { allowed, retryAfterSeconds } = checkRateLimit(`search:${getClientIp(request)}`, 60, 60_000);

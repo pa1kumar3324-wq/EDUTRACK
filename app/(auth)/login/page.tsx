@@ -46,7 +46,7 @@ function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
 
-    // M6: pre-flight rate-limit check — see app/api/auth/rate-limit-check
+    // Pre-flight rate-limit check — see app/api/auth/rate-limit-check
     // for why this exists (signInWithPassword below talks directly to
     // Supabase, which our own server never sees).
     const rateLimitRes = await fetch("/api/auth/rate-limit-check", {

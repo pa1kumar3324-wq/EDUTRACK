@@ -16,8 +16,9 @@
 -- `auth.role() = 'authenticated'`. This migration brings volunteers in line.
 --
 -- Note: this only restores parity with the other tables (any authenticated
--- user can still read full volunteer rows via this policy). H1 addresses
--- the separate problem of full PII reaching non-admin authenticated users
+-- user can still read full volunteer rows via this policy). A separate fix
+-- (see lib/types/database.ts's PublicVolunteer) addresses the separate
+-- problem of full PII reaching non-admin authenticated users
 -- at the application layer.
 -- ============================================================================
 
