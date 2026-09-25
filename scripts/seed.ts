@@ -207,6 +207,10 @@ async function seedProgress(students: { id: string; grade: number }[], volunteer
         math_status: faker.helpers.arrayElement(STATUSES),
         homework: faker.helpers.maybe(() => faker.lorem.sentence(), { probability: 0.7 }) ?? null,
         notes: faker.helpers.maybe(() => faker.lorem.sentence(), { probability: 0.5 }) ?? null,
+        // Weekly Effort Score — mostly present (matches the ProgressForm
+        // requiring it for new submissions) but occasionally left off, so
+        // the seeded data also demonstrates the "not rated" empty state.
+        effort_score: faker.helpers.maybe(() => faker.number.int({ min: 1, max: 10 }), { probability: 0.85 }) ?? null,
         created_at: createdAt.toISOString(),
         session_date: createdAt.toISOString().slice(0, 10),
       });

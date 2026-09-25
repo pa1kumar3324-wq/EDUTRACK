@@ -15,6 +15,7 @@ import { StatusPicker } from "@/components/shared/StatusPicker";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Disclosure } from "@/components/progress/Disclosure";
 import { StudentStateFields } from "@/components/progress/StudentStateFields";
+import { EffortScorePicker } from "@/components/progress/EffortScorePicker";
 import { SubjectObservationsFields } from "@/components/progress/SubjectObservationsFields";
 import { SessionQualityFields } from "@/components/progress/SessionQualityFields";
 import { progressSchema, type ProgressFormValues } from "@/lib/validations/progress";
@@ -185,6 +186,28 @@ export function ProgressForm({ student, roadmap }: { student: Student; roadmap: 
         </CardHeader>
         <CardContent>
           <StudentStateFields value={observations} onChange={updateObservations} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">⭐ Effort score</CardTitle>
+          <CardDescription>
+            Rate the student&apos;s effort, participation, persistence, and willingness to learn today. This is
+            not a measure of correctness or academic ability.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <span id="effort-score-label" className="sr-only">
+            Effort score, 1 to 10
+          </span>
+          <EffortScorePicker
+            value={watch("effort_score")}
+            onChange={(score) => setValue("effort_score", score, { shouldDirty: true, shouldValidate: true })}
+          />
+          {errors.effort_score && (
+            <p className="mt-2 text-sm text-destructive">{errors.effort_score.message}</p>
+          )}
         </CardContent>
       </Card>
 

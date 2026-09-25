@@ -32,30 +32,35 @@ app/
   (auth)/login/, forgot-password/, set-password/    Public + invite-flow auth pages
   (dashboard)/             Everything behind auth, wrapped by a Sidebar + Topbar shell
     dashboard/              Volunteer home — "Your Students" cards
-    students/[id]/          Student profile: progress bar, timeline, journey charts, weak areas, homework
+    students/[id]/          Student profile: progress bar, timeline, journey charts, weak areas,
+                             homework, effort summary
     students/[id]/update/   Progress update form
     admin/                  Admin-only: students, volunteers, learning circles, verification,
                              attendance, roadmap, coverage, reports
+    effort-leaderboard/     Effort Leaderboard — open to volunteers and admins alike
   api/                      Route handlers — students, volunteers, assignments, progress,
                              roadmap, attendance, learning-circles, debriefs, search, export,
-                             profile, auth callback
+                             effort-leaderboard, profile, auth callback
   loading.tsx, error.tsx, global-error.tsx, not-found.tsx   Route-level loading/error boundaries
   icon.tsx, apple-icon.tsx  Favicon generated at build time via next/og
 components/
   ui/                       shadcn/ui primitives (button, card, dialog, alert-dialog, table, tabs, ...)
   shared/                   Cross-cutting UI: StatusBadge, LevelBadge, EmptyState, PageHeader,
-                             AnimatedNumber, ConfirmDialog, LevelPicker, StatusPicker, skeletons
+                             AnimatedNumber, ConfirmDialog, LevelPicker, StatusPicker,
+                             EffortLeaderboardPanel, skeletons
   layout/                   Sidebar, Topbar (incl. GlobalSearch), MobileNav, ThemeProvider
   dashboard/                StatCard, StudentCard, RecentActivity, AttendancePieChart
   student/                  StudentProfileTabs, ProgressTimeline, JourneyChart
   admin/                    StudentsTable, VolunteersTable, RoadmapBuilder, AnalyticsCharts,
                              ExportPanel, AttendanceMarker, CoverageBoard, EditProgressDialog,
                              Learning Circle management + verification queue
-  progress/                 ProgressForm (the "Update Progress" form), ScaleSelect chip fields
+  progress/                 ProgressForm (the "Update Progress" form), ScaleSelect chip fields,
+                             EffortScorePicker (1-10 effort rating)
   ai/                       Tsareena — the client-side AI assistant (see below)
 lib/
   supabase/                 Browser client, server client, session-refresh helper
-  repositories/             One file per table — all data access goes through these (repository pattern)
+  repositories/             One file per table — all data access goes through these (repository
+                             pattern), incl. effortRepository (leaderboard aggregation)
   validations/              Zod schemas shared by forms and API routes
   utils/                    roadmapEngine.ts (next-lesson recommendation), suggestionEngine.ts
                              (deterministic suggestion text)
@@ -74,7 +79,8 @@ supabase/
                               volunteer privilege-escalation guard · 006 volunteer profile
                               fields · 007 volunteers SELECT scope fix · 008 Learning Circles
                               & debrief verification · 009 progress edit trail · 010 volunteer
-                              deactivation & purge enforcement
+                              deactivation & purge enforcement · 011 Weekly Effort Score +
+                              leaderboard
   tests/                    Manual RLS verification scripts — run in the Supabase SQL editor
                              against a real project before relying on a security-sensitive change
   seed_roadmap.sql          Optional standalone roadmap seed (SQL-only alternative to scripts/seed.ts)
@@ -199,6 +205,9 @@ A database trigger (`handle_new_auth_user`) automatically creates their `volunte
 | View own attendance history | ✅ (read-only) | ✅ (all volunteers) |
 | Create/manage Learning Circles | ❌ | ✅ |
 | Verify/reject a circle's debriefs | ✅, if the circle's lead | ✅, if the circle's lead |
+| Rate a student's effort (1-10) when logging progress | ✅ (only for assigned students) | ✅ (any student) |
+| View the Effort Leaderboard | ✅ | ✅ |
+| Download the Effort Leaderboard | ❌ | ✅ |
 
 A volunteer who isn't in a Learning Circle behaves exactly as the table above says. Being placed in
 a circle adds exactly one restriction: their debriefs sit as `pending` until their circle's lead
@@ -237,6 +246,38 @@ toward `latest_progress`, the "needs revision" flag, roadmap continuity, reports
   metrics (weak topics, roadmap continuity) count verified debriefs only; "did the volunteer show
   up and write it up" metrics (dashboard stats, weekend coverage) count anything not rejected,
   pending included — a lead's review latency shouldn't count against the volunteer.
+
+## Weekly Effort Score & leaderboard
+
+Every progress submission asks the volunteer to rate the student's **effort** for that session —
+participation, persistence, attention, willingness to try — on a simple 1-10 scale. It is
+deliberately **not** a measure of English/Math correctness, intelligence, or academic ability; the
+form says so directly next to the picker, and the score never touches roadmap position, levels, or
+the "needs revision" flag.
+
+- **Logging it**: `components/progress/EffortScorePicker.tsx` is a keyboard-accessible 1-10 chip
+  row on the "Update Progress" form, required for every new submission. Historical sessions logged
+  before this feature simply have `effort_score = NULL` — shown everywhere as "not yet rated,"
+  never as a score of zero.
+- **The leaderboard** (`/effort-leaderboard`, open to volunteers and admins alike — the same access
+  `progress_select_all` already grants to a student's progress history): ranks students by average
+  effort score, then by number of rated sessions, never by academic status. Switch between
+  **All Students** and any one **Learning Circle**. A student needs at least one rated, *verified*
+  session to appear at all — nobody shows up reading 0/10.
+  - Because a Learning Circle in this app is a group of *volunteers* (not students — see below), a
+    student's circle for leaderboard purposes is the circle that logged their most recently rated
+    session. See the header comment in `supabase/migrations/011_effort_score.sql` for the full
+    reasoning.
+- **Student profile**: a small "⭐ Effort" line (average + number of rated sessions) sits below the
+  existing English/Math progress cards — clearly secondary to, and never replacing, the academic
+  progress view.
+- **Export**: admins can download the leaderboard as CSV, Excel, or PDF (`Rank`, `Student Name`,
+  `Learning Circle`, `Average Effort Score`, `Sessions Rated`) via the same `/api/export`
+  infrastructure (papaparse / exceljs / jspdf-autotable) every other export already uses — no new
+  library, and the export is scoped to whatever circle (or "All Students") is currently selected.
+- **Performance**: the average/count per student is computed once, server-side, by three Postgres
+  views (`student_effort_summary`, `student_effort_circle`, `student_effort_leaderboard`) rather
+  than the app fetching every student's progress history and reducing it in JS.
 
 ## Weekend coverage & global search
 

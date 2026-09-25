@@ -7,6 +7,7 @@ import { studentRepository } from "@/lib/repositories/studentRepository";
 import { progressRepository } from "@/lib/repositories/progressRepository";
 import { roadmapRepository } from "@/lib/repositories/roadmapRepository";
 import { studentRoadmapPositionRepository } from "@/lib/repositories/studentRoadmapPositionRepository";
+import { effortRepository } from "@/lib/repositories/effortRepository";
 import { resolveRoadmapPosition } from "@/lib/utils/roadmapEngine";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,11 +47,12 @@ export default async function StudentProfilePage({
     notFound();
   }
 
-  const [history, assignedVolunteers, roadmap, baselinePositions] = await Promise.all([
+  const [history, assignedVolunteers, roadmap, baselinePositions, effortSummary] = await Promise.all([
     progressRepository.listForStudent(supabase, id),
     studentRepository.assignedVolunteers(supabase, id),
     roadmapRepository.listByGrade(supabase, student.grade),
     studentRoadmapPositionRepository.listForStudent(supabase, id),
+    effortRepository.forStudent(supabase, id),
   ]);
 
   const typedHistory: HistoryRow[] = history;
@@ -316,6 +318,24 @@ export default async function StudentProfilePage({
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Secondary to the academic English/Math cards above — effort is a
+          separate, non-academic signal (participation, persistence,
+          willingness to try), so it's a small strip, not another full
+          card in that grid. See supabase/migrations/011_effort_score.sql. */}
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
+        <span className="text-sm font-medium text-muted-foreground">⭐ Effort</span>
+        {effortSummary ? (
+          <span className="text-sm">
+            <span className="font-semibold tabular-nums">{effortSummary.average_effort_score.toFixed(1)} / 10</span>{" "}
+            <span className="text-muted-foreground">
+              · {effortSummary.effort_score_count} rated session{effortSummary.effort_score_count === 1 ? "" : "s"}
+            </span>
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">No effort scores have been recorded yet.</span>
+        )}
       </div>
 
       <StudentProfileTabs

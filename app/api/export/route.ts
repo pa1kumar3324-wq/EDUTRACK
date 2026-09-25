@@ -8,9 +8,17 @@ import Papa from "papaparse";
 import ExcelJS from "exceljs";
 
 /**
- * GET /api/export?format=csv|xlsx|json&type=students|progress|attendance&view=summary|detailed — admin only.
+ * GET /api/export?format=csv|xlsx|json&type=students|progress|attendance|effort-leaderboard&view=summary|detailed&circleId= — admin only.
  * Streams back the requested file as a download (json is used internally to
- * build client-side PDFs — see the Reports & Coverage > Exports ExportPanel).
+ * build client-side PDFs — see the Reports & Coverage > Exports ExportPanel,
+ * and components/admin/EffortLeaderboardPanel.tsx's own "Download
+ * Leaderboard" button, which calls this same endpoint with
+ * type=effort-leaderboard rather than duplicating export logic).
+ *
+ * `type=effort-leaderboard` exports the same rows the Effort Leaderboard
+ * page shows (Rank, Student Name, Learning Circle, Average Effort Score,
+ * Sessions Rated), scoped to one Learning Circle when `circleId` is given,
+ * or every rated student org-wide otherwise.
  *
  * Attendance has two views:
  *  - "summary" (default): one row per volunteer with a single "Sessions
@@ -54,6 +62,7 @@ async function handleExport(request: Request) {
   const attendanceView = searchParams.get("view") === "detailed" ? "detailed" : "summary";
   const from = searchParams.get("from") || undefined;
   const to = searchParams.get("to") || undefined;
+  const circleId = searchParams.get("circleId") || undefined;
 
   for (const [label, value] of [["from", from], ["to", to]] as const) {
     if (value !== undefined) {
@@ -165,6 +174,35 @@ async function handleExport(request: Request) {
         });
       }
     }
+  } else if (type === "effort-leaderboard") {
+    // Same view the Effort Leaderboard page reads (see effortRepository) —
+    // already averages/counts server-side, so this is one query regardless
+    // of scope. `circleId` narrows to one Learning Circle, same as the
+    // on-screen leaderboard's filter; omitted, this is the "All Students"
+    // export.
+    const { effortRepository } = await import("@/lib/repositories/effortRepository");
+    const leaderboardRows = await effortRepository.leaderboard(supabase, circleId);
+
+    let circleName: string | null = null;
+    if (circleId) {
+      const { data: circle } = await supabase
+        .from("learning_circles")
+        .select("name")
+        .eq("id", circleId)
+        .maybeSingle();
+      circleName = circle?.name ?? null;
+      filename += circleName
+        ? `-${circleName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`
+        : "";
+    }
+
+    rows = leaderboardRows.map((row, index) => ({
+      Rank: index + 1,
+      "Student Name": row.student_name,
+      "Learning Circle": row.learning_circle_name ?? "No Learning Circle",
+      "Average Effort Score": row.average_effort_score,
+      "Sessions Rated": row.effort_score_count,
+    }));
   } else {
     const { data, error } = await supabase
       .from("progress")
@@ -204,6 +242,16 @@ async function handleExport(request: Request) {
     });
   }
 
+  if (type === "effort-leaderboard" && rows.length === 0) {
+    // No rated sessions yet for this scope — same "explicit empty payload
+    // instead of a blank file" treatment as the attendance case above.
+    return NextResponse.json({
+      rows: [],
+      empty: true,
+      message: "No effort scores have been recorded yet for this scope.",
+    });
+  }
+
   if (format === "csv") {
     const csv = Papa.unparse(rows);
     return new NextResponse(csv, {
@@ -216,7 +264,14 @@ async function handleExport(request: Request) {
 
   if (format === "xlsx") {
     const workbook = new ExcelJS.Workbook();
-    const sheetName = type === "students" ? "Students" : type === "attendance" ? "Attendance" : "Progress";
+    const sheetName =
+      type === "students"
+        ? "Students"
+        : type === "attendance"
+          ? "Attendance"
+          : type === "effort-leaderboard"
+            ? "Effort Leaderboard"
+            : "Progress";
     const worksheet = workbook.addWorksheet(sheetName);
     const [firstRow] = rows;
     if (firstRow) {

@@ -2,6 +2,36 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.5.0]
+
+### Added
+- **Weekly Effort Score + Leaderboard.** Every progress submission now asks the volunteer to rate
+  the student's EFFORT for that session — participation, persistence, willingness to try — on a
+  1-10 scale (`components/progress/EffortScorePicker.tsx`, a keyboard-accessible radiogroup in
+  `ProgressForm.tsx`, required for new submissions). Explicitly **not** a measure of English/Math
+  correctness or academic ability; the form says so directly, and the feature is deliberately kept
+  separate from the roadmap/level system.
+  - **Schema:** one nullable `progress.effort_score integer` column (1-10 CHECK constraint) — no
+    new table, since a session is already one `progress` row
+    (`supabase/migrations/011_effort_score.sql`). Historical rows are unaffected (`NULL` = "not
+    rated", never shown as 0/10).
+  - **Leaderboard:** three read-only views (`student_effort_summary`, `student_effort_circle`,
+    `student_effort_leaderboard`) compute `AVG`/`COUNT` grouped by student server-side, so the
+    Effort Leaderboard is always a single query, never one query per student. Ranked by average
+    effort DESC, then sessions-rated DESC — never by academic status. A student with zero rated
+    sessions never appears (no row reads as a poor score).
+  - **Page:** `/effort-leaderboard`, open to every authenticated user (volunteer or admin) — same
+    access `progress_select_all` already grants — with an "All Students" view and a per-Learning-
+    Circle view (`components/shared/EffortLeaderboardPanel.tsx`). Since students don't belong to a
+    Learning Circle directly (only volunteers do), a student's circle for leaderboard purposes is
+    derived from the circle that logged their most recent rated session — see the migration's
+    header comment for the full rationale.
+  - **Export:** `GET /api/export?type=effort-leaderboard` reuses the existing CSV/Excel/PDF export
+    infrastructure (papaparse/exceljs/jspdf-autotable) — no new library. Admin-only, matching every
+    other export in the app.
+  - **Student profile:** a small, secondary "⭐ Effort" line (average + sessions rated) below the
+    existing English/Math cards — doesn't touch or reorder the academic progress UI.
+
 ## [1.4.0]
 
 ### Added

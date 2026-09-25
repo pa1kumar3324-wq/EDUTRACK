@@ -98,6 +98,7 @@ export const progressRepository = {
       homework: values.homework || null,
       notes: values.notes || null,
       suggested_next_lesson: values.suggested_next_lesson || null,
+      effort_score: values.effort_score ?? null,
       session_observations:
         values.session_observations && Object.keys(values.session_observations).length > 0
           ? (values.session_observations as Database["public"]["Tables"]["progress"]["Insert"]["session_observations"])
@@ -136,9 +137,10 @@ export const progressRepository = {
    * happened.
    *
    * `edited_by`/`edited_at` are NOT set here — trg_stamp_progress_edit
-   * (migration 009) derives them from auth.uid()/now() whenever a content
-   * field actually changes, so the audit trail reflects who Postgres saw
-   * rather than what this process claims.
+   * (migration 009, extended by migration 011 to also watch effort_score)
+   * derives them from auth.uid()/now() whenever a content field actually
+   * changes, so the audit trail reflects who Postgres saw rather than what
+   * this process claims.
    */
   async update(
     supabase: Client,
@@ -152,6 +154,7 @@ export const progressRepository = {
       math_roadmap_id: string | null;
       homework: string | null;
       notes: string | null;
+      effort_score: number;
     }>
   ) {
     const { data, error } = await supabase

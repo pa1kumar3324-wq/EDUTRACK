@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusPicker } from "@/components/shared/StatusPicker";
+import { EffortScorePicker } from "@/components/progress/EffortScorePicker";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,7 @@ export function EditProgressDialog({
     | "math_roadmap_id"
     | "homework"
     | "notes"
+    | "effort_score"
   >;
   /** Full grade roadmap (both subjects) — filtered internally, same as ProgressForm. */
   roadmap: LearningRoadmapEntry[];
@@ -69,6 +71,13 @@ export function EditProgressDialog({
   const [mathStatus, setMathStatus] = useState<UnderstandingStatus | undefined>(entry.math_status ?? undefined);
   const [homework, setHomework] = useState(entry.homework ?? "");
   const [notes, setNotes] = useState(entry.notes ?? "");
+  // Historical rows can have effort_score = NULL ("not rated"); the admin
+  // edit schema is deliberately non-nullable (see progressEditSchema in
+  // lib/validations/progress.ts), so this UI can only ever correct an
+  // existing score to another 1-10 value — never clear one back to NULL.
+  // Leaving this undefined and never touching the picker simply omits
+  // effort_score from the PATCH payload, which is what "no change" means.
+  const [effortScore, setEffortScore] = useState<number | undefined>(entry.effort_score ?? undefined);
 
   const topicsBySubject: Record<Subject, LearningRoadmapEntry[]> = useMemo(() => {
     const bySubject = (subject: Subject) =>
@@ -108,6 +117,7 @@ export function EditProgressDialog({
           math_roadmap_id: mathRoadmapId,
           homework,
           notes,
+          effort_score: effortScore,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -204,6 +214,15 @@ export function EditProgressDialog({
               label="Math understanding"
               value={mathStatus}
               onChange={(v) => setMathStatus(v as UnderstandingStatus)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label id="edit-effort-score-label">⭐ Effort score</Label>
+            <EffortScorePicker
+              id="edit-effort-score"
+              value={effortScore}
+              onChange={setEffortScore}
             />
           </div>
 

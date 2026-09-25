@@ -140,6 +140,14 @@ export type Progress = {
    * the only structural guarantees.
    */
   session_observations: import("./sessionObservations").SessionObservations | null;
+  /**
+   * Volunteer-given rating (1-10) of the student's EFFORT this session —
+   * participation, persistence, willingness to try. NOT a measure of
+   * English/Math correctness or academic ability. Null means "not rated",
+   * never zero. See supabase/migrations/011_effort_score.sql and
+   * lib/validations/progress.ts.
+   */
+  effort_score: number | null;
   session_date: string;
   /**
    * Whether this debrief has been recorded. Derived server-side by a
@@ -261,6 +269,32 @@ export type PendingDebrief = Progress & {
   students: Pick<Student, "id" | "name" | "grade"> | null;
   volunteers: Pick<PublicVolunteer, "id" | "name" | "preferred_name" | "avatar_url"> | null;
   learning_circles: Pick<LearningCircle, "id" | "name" | "lead_admin_id"> | null;
+};
+
+/**
+ * One row of the Weekly Effort Score leaderboard — mirrors either
+ * `student_effort_leaderboard` (the "All Students" scope) or
+ * `student_effort_leaderboard_by_circle` (a single Learning Circle's own
+ * scope); see supabase/migrations/011_effort_score.sql. Both views share
+ * this shape, but `average_effort_score`/`effort_score_count` mean
+ * different things depending on which one produced the row: the student's
+ * org-wide average (All Students) vs. their average from that ONE circle's
+ * sessions only (a circle scope) — see effortRepository.leaderboard(). Only
+ * students with at least one rated, verified session ever appear; a student
+ * with zero rated sessions (in that scope) simply isn't in the result set.
+ * `learning_circle_id`/`learning_circle_name` are null in the "All
+ * Students" scope only when the student's most recently rated session was
+ * logged by a volunteer who belongs to no Learning Circle; in a circle
+ * scope they're always that circle (never null, since the row wouldn't
+ * exist otherwise).
+ */
+export type EffortLeaderboardRow = {
+  student_id: string;
+  student_name: string;
+  average_effort_score: number;
+  effort_score_count: number;
+  learning_circle_id: string | null;
+  learning_circle_name: string | null;
 };
 
 export interface Database {
@@ -453,6 +487,8 @@ export interface Database {
     Views: {
       latest_progress: { Row: LatestProgress; Relationships: [] };
       students_needing_revision: { Row: StudentNeedingRevision; Relationships: [] };
+      student_effort_leaderboard: { Row: EffortLeaderboardRow; Relationships: [] };
+      student_effort_leaderboard_by_circle: { Row: EffortLeaderboardRow; Relationships: [] };
     };
     Functions: Record<string, never>;
     Enums: {

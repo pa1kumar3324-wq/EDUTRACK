@@ -119,6 +119,12 @@ create table progress (
   -- lib/types/sessionObservations.ts and
   -- supabase/migrations/004_session_observations.sql.
   session_observations  jsonb,
+  -- Volunteer-given rating (1-10) of the STUDENT'S EFFORT this session —
+  -- participation, persistence, willingness to try. Explicitly NOT a
+  -- measure of English/Math correctness or academic ability. Null means
+  -- "not rated", never zero. See supabase/migrations/011_effort_score.sql
+  -- and lib/validations/progress.ts.
+  effort_score          integer check (effort_score is null or effort_score between 1 and 10),
   session_date          date not null default current_date,
   created_at            timestamptz not null default now()
 );
@@ -711,6 +717,114 @@ having
   or (coalesce(max(s.updated_at), s.created_at) < now() - interval '14 days');
 
 -- ----------------------------------------------------------------------------
+-- EFFORT SCORE LEADERBOARD
+-- Four read-only views computing the Weekly Effort Score leaderboard
+-- server-side (AVG/COUNT grouped by student, or by student+circle) rather
+-- than the app fetching every student's progress history and reducing it
+-- in JS. Depends on `learning_circles` and `progress.verification_status`
+-- above, so this block — like the verified-only
+-- latest_progress/students_needing_revision views just above — has to live
+-- here, after both exist. This block mirrors
+-- supabase/migrations/011_effort_score.sql; see that file for the full
+-- rationale (why one column vs a new table, why the "All Students" scope's
+-- displayed circle is derived rather than a direct relationship, why a
+-- single circle's own leaderboard is a separate aggregation instead, why
+-- unverified rows never count).
+-- ----------------------------------------------------------------------------
+
+-- All effort views below are created WITH (security_invoker = true): a
+-- plain view runs RLS checks on the tables it reads as the view's OWNER,
+-- not the querying role, so without security_invoker these views would
+-- silently bypass `progress`/`students`/`learning_circles`'s
+-- `authenticated`-only select policies and leak the leaderboard to `anon`.
+-- See supabase/migrations/011_effort_score.sql for the full rationale.
+
+-- One row per student with at least one rated, VERIFIED session. A student
+-- with no rated sessions has no row here — the app must never render a
+-- missing row as "0/10".
+create or replace view student_effort_summary
+  with (security_invoker = true) as
+select
+  p.student_id,
+  round(avg(p.effort_score)::numeric, 1) as average_effort_score,
+  count(p.effort_score) as effort_score_count
+from progress p
+where p.verification_status = 'verified'
+  and p.effort_score is not null
+group by p.student_id;
+
+alter view student_effort_summary set (security_invoker = true);
+
+-- The Learning Circle credited with each rated student's most recent rated,
+-- verified session (null if that session's author belonged to no circle).
+-- Students don't belong to a Learning Circle directly in this schema — only
+-- volunteers do (learning_circle_members) — so this reuses the existing
+-- relationship via progress.learning_circle_id rather than inventing one.
+-- Used ONLY as a display label on the "All Students" leaderboard scope; a
+-- single circle's own leaderboard is computed by
+-- student_effort_leaderboard_by_circle below, not from this view.
+create or replace view student_effort_circle
+  with (security_invoker = true) as
+select distinct on (p.student_id)
+  p.student_id,
+  p.learning_circle_id,
+  lc.name as learning_circle_name
+from progress p
+left join learning_circles lc on lc.id = p.learning_circle_id
+where p.verification_status = 'verified'
+  and p.effort_score is not null
+order by p.student_id, p.created_at desc;
+
+alter view student_effort_circle set (security_invoker = true);
+
+-- Ready-to-render "All Students" Effort Leaderboard rows: active students
+-- with at least one rated, verified session anywhere in the org. Callers
+-- order by average_effort_score DESC, effort_score_count DESC.
+create or replace view student_effort_leaderboard
+  with (security_invoker = true) as
+select
+  s.id as student_id,
+  s.name as student_name,
+  es.average_effort_score,
+  es.effort_score_count,
+  ec.learning_circle_id,
+  ec.learning_circle_name
+from students s
+join student_effort_summary es on es.student_id = s.id
+left join student_effort_circle ec on ec.student_id = s.id
+where s.is_active;
+
+alter view student_effort_leaderboard set (security_invoker = true);
+
+-- A single Learning Circle's leaderboard aggregates directly from the
+-- verified, rated `progress` rows that actually belong to that circle
+-- (progress.learning_circle_id, snapshotted at insert time — migration
+-- 008), grouped by student — NOT a filter over student_effort_leaderboard's
+-- "credited circle" above, which would misattribute a student's whole
+-- history to whichever circle happened to submit their latest session. A
+-- student taught through more than one circle legitimately gets one row
+-- (and one average) per circle here, and can appear on more than one
+-- circle's leaderboard. See migration 011 for the full rationale.
+create or replace view student_effort_leaderboard_by_circle
+  with (security_invoker = true) as
+select
+  p.learning_circle_id,
+  lc.name as learning_circle_name,
+  s.id as student_id,
+  s.name as student_name,
+  round(avg(p.effort_score)::numeric, 1) as average_effort_score,
+  count(p.effort_score) as effort_score_count
+from progress p
+join students s on s.id = p.student_id
+join learning_circles lc on lc.id = p.learning_circle_id
+where p.verification_status = 'verified'
+  and p.effort_score is not null
+  and s.is_active
+group by p.learning_circle_id, lc.name, s.id, s.name;
+
+alter view student_effort_leaderboard_by_circle set (security_invoker = true);
+
+-- ----------------------------------------------------------------------------
 -- ADMIN EDIT TRAIL ON PROGRESS
 -- Admins may correct a debrief's taught content (progress_admin_write
 -- already permits this). These columns record who last did so and when,
@@ -738,6 +852,7 @@ begin
   or new.homework               is distinct from old.homework
   or new.notes                  is distinct from old.notes
   or new.session_observations   is distinct from old.session_observations
+  or new.effort_score            is distinct from old.effort_score
   then
     new.edited_by := auth.uid();
     new.edited_at := now();

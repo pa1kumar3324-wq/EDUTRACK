@@ -12,7 +12,7 @@ import { validateTopicAgainstRoadmap } from "@/lib/utils/roadmapEngine";
  * PATCH /api/progress/[id] — admin only.
  * Body: any subset of { english_topic, english_status, english_roadmap_id,
  *                        math_topic, math_status, math_roadmap_id,
- *                        homework, notes }
+ *                        homework, notes, effort_score }
  *
  * A correction to a debrief that already exists — not a new submission.
  * `progress_admin_write` (RLS) already lets any admin UPDATE any progress
@@ -96,6 +96,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (values.homework !== undefined) patch.homework = values.homework || null;
     if (values.notes !== undefined) patch.notes = values.notes || null;
+    if (values.effort_score !== undefined) patch.effort_score = values.effort_score;
 
     const updated = await progressRepository.update(supabase, id, patch);
     return NextResponse.json({ progress: updated });

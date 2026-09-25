@@ -5,6 +5,7 @@ import {
   BarChart3,
   FileDown,
   ShieldCheck,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
 
@@ -14,8 +15,20 @@ export type NavItem = {
   icon: LucideIcon;
 };
 
+// Shared by both volunteerNav and adminNav — the Effort Leaderboard reads
+// the same progress data every authenticated user can already see
+// (progress_select_all), so it isn't an admin-only surface like the rest
+// of adminNav. Only the leaderboard's export is admin-gated (see
+// components/shared/EffortLeaderboardPanel.tsx).
+const EFFORT_LEADERBOARD_NAV_ITEM: NavItem = {
+  href: "/effort-leaderboard",
+  label: "Effort Leaderboard",
+  icon: Trophy,
+};
+
 export const volunteerNav: NavItem[] = [
   { href: "/dashboard", label: "Your Students", icon: LayoutDashboard },
+  EFFORT_LEADERBOARD_NAV_ITEM,
 ];
 
 export const adminNav: NavItem[] = [
@@ -25,6 +38,7 @@ export const adminNav: NavItem[] = [
   // every admin: an org with no circles sees an empty-state that explains
   // the feature rather than a broken-looking page.
   { href: "/admin/verification", label: "Verification", icon: ShieldCheck },
+  EFFORT_LEADERBOARD_NAV_ITEM,
   { href: "/admin/reports-coverage", label: "Reports & Coverage", icon: FileDown },
   { href: "/admin/roadmap", label: "Roadmap", icon: Map },
 ];
