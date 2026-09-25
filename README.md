@@ -1,8 +1,28 @@
 # EduTrack
 
-A Volunteer Learning Management System (VLMS) built for NGOs that teach underprivileged children, where different volunteers teach the same child on different weekends.
+EduTrack is a production-ready Volunteer Learning Management System designed for nonprofit tutoring programs where different volunteers teach the same child across multiple sessions. It gives each volunteer instant context on a student's history, recommended next step, and areas that need revision — so learning remains continuous even when staff and tutors rotate.
 
-**The problem it solves:** continuity. Every volunteer opens EduTrack and immediately sees what a child learned last time, what's recommended next, and what needs revision — without tracking down the previous volunteer.
+This platform is already live in production and is being used by 50+ real-world users across active tutoring programs. It combines student progress tracking, volunteer coordination, attendance management, and reporting into a single system that reduces admin overhead and preserves instructional continuity.
+
+## Why this project matters
+
+- Eliminates the "I don't know what the last volunteer covered" problem
+- Keeps students on a consistent learning path across weekends and volunteers
+- Gives admins visibility into coverage, attendance, and student risk
+- Helps volunteers spend more time teaching and less time reconstructing context
+- Supports scalable program operations without relying on spreadsheets or fragmented records
+
+## Product highlights
+
+- Student dashboard with assignment history, latest progress, and revision alerts
+- Progress logging for academic sessions with suggested next lesson recommendations
+- Volunteer attendance tracking, coverage monitoring, and reporting
+- Learning Circle coordination with debrief verification and approval workflows
+- Effort scoring and a student leaderboard to capture participation and engagement
+- Admin tooling for students, volunteers, roadmaps, analytics, and exports
+- Secure role-based access with Supabase Auth and database-level permission checks
+- AI assistant support via Tsareena, using a personal Gemini API key in-browser for optional guidance
+- CSV, Excel, and PDF export support for operational reporting
 
 ---
 
