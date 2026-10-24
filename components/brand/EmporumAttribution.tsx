@@ -5,12 +5,12 @@ type Variant = "footer" | "auth";
 
 /**
  * Quiet credit to EduTrack's creator. Never promotional: small, muted, and the product name stays
- * dominant everywhere it appears. Renders the name as a link only when a valid URL is configured.
+ * dominant everywhere it appears. The name always links to the Emporum site.
  */
 export function EmporumAttribution({ variant = "footer", className }: { variant?: Variant; className?: string }) {
   const url = getEmporumUrl();
 
-  const name = url ? (
+  const name = (
     <a
       href={url}
       target="_blank"
@@ -20,8 +20,6 @@ export function EmporumAttribution({ variant = "footer", className }: { variant?
     >
       {CREATOR_NAME}
     </a>
-  ) : (
-    <span className="font-semibold text-foreground">{CREATOR_NAME}</span>
   );
 
   return (
