@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { AuthFrame } from "@/components/layout/AuthFrame";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -71,53 +72,48 @@ export default function SetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-
-      <div className="w-full max-w-sm">
-        <h1 className="mb-8 font-display text-xl font-semibold">EduTrack</h1>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Set your password</CardTitle>
-            <CardDescription>You&apos;ll use this to sign in from now on.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="password">New password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  minLength={MIN_PASSWORD_LENGTH}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-                <p className="text-xs text-muted-foreground">At least {MIN_PASSWORD_LENGTH} characters.</p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="confirm-password">Confirm password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  minLength={MIN_PASSWORD_LENGTH}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-              </div>
-              <Button type="submit" disabled={isLoading} className="mt-1">
-                {isLoading && <Loader2 className="animate-spin" />}
-                Set password &amp; continue
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <AuthFrame>
+      <Card className="border-accent/25 shadow-soft-lg">
+        <CardHeader>
+          <CardTitle>Set your password</CardTitle>
+          <CardDescription>You&apos;ll use this to sign in from now on.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password">New password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                required
+                minLength={MIN_PASSWORD_LENGTH}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+              <p className="text-xs text-muted-foreground">At least {MIN_PASSWORD_LENGTH} characters.</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="confirm-password">Confirm password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="••••••••"
+                required
+                minLength={MIN_PASSWORD_LENGTH}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            <Button type="submit" disabled={isLoading} className="mt-1">
+              {isLoading && <Loader2 className="animate-spin" />}
+              Set password &amp; continue
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </AuthFrame>
   );
 }

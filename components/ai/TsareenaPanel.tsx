@@ -152,7 +152,7 @@ function PanelBody({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={status === "connected" ? "Ask Tsareena\u2026" : "Connect a Gemini key to chat, or browse quick prompts above"}
-              className="h-9 flex-1 rounded-lg border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-10 flex-1 rounded-full border border-input bg-background px-4 text-sm hover:border-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Message Tsareena"
             />
             <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={!input.trim() || isThinking} aria-label="Send">
@@ -189,7 +189,7 @@ export function TsareenaPanel(props: TsareenaPanelProps) {
     <div
       role="dialog"
       aria-label="Tsareena assistant"
-      className="animate-scale-in fixed bottom-24 right-6 z-40 flex h-[560px] w-[380px] max-h-[75vh] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft-lg"
+      className="animate-scale-in fixed bottom-24 right-6 z-40 flex h-[560px] w-[380px] max-h-[75vh] flex-col overflow-hidden rounded-2xl border border-accent/30 bg-card shadow-soft-lg"
     >
       <PanelBody {...props} onClose={() => props.onOpenChange(false)} />
     </div>

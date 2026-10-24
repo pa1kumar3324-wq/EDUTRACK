@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { AuthFrame } from "@/components/layout/AuthFrame";
 
 function LoginForm() {
   const router = useRouter();
@@ -90,60 +91,55 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-
-      <div className="w-full max-w-sm">
-        <h1 className="mb-8 font-display text-xl font-semibold">EduTrack</h1>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign in</CardTitle>
-            <CardDescription>Use the email your admin registered for you.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@ngo.org"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                />
+    <AuthFrame>
+      <Card className="border-accent/25 shadow-soft-lg">
+        <CardHeader>
+          <CardTitle>Sign in</CardTitle>
+          <CardDescription>Use the email your admin registered for you.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@ngo.org"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                  Forgot password?
+                </Link>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
-              </div>
-              <Button type="submit" disabled={isLoading} className="mt-1">
-                {isLoading && <Loader2 className="animate-spin" />}
-                Sign in
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+            <Button type="submit" disabled={isLoading} className="mt-1">
+              {isLoading && <Loader2 className="animate-spin" />}
+              Sign in
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          First time? Ask an admin to invite you from the Volunteers panel.
-        </p>
-      </div>
-    </div>
+      <p className="mt-6 text-center text-xs text-muted-foreground">
+        First time? Ask an admin to invite you from the Volunteers panel.
+      </p>
+    </AuthFrame>
   );
 }
 

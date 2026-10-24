@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraduationCap } from "lucide-react";
+import { Wordmark } from "@/components/brand/Wordmark";
 import { cn } from "@/lib/utils";
 import { getNavForRole, isNavItemActive } from "@/lib/navigation";
 import type { AuthUser } from "@/lib/types";
@@ -12,12 +12,11 @@ export function Sidebar({ user }: { user: AuthUser }) {
   const items = getNavForRole(user.role);
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card/40 md:flex">
-      <div className="flex h-14 items-center gap-2 border-b border-border px-5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <GraduationCap className="h-4 w-4" />
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card/60 md:flex">
+      <div className="flex h-16 items-center border-b border-border px-5">
+        <div className="text-sm">
+          <Wordmark />
         </div>
-        <span className="font-display text-sm font-semibold">EduTrack</span>
       </div>
 
       <nav className="flex-1 space-y-1 p-3">
@@ -28,11 +27,12 @@ export function Sidebar({ user }: { user: AuthUser }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "relative flex items-center gap-2.5 rounded-full px-3.5 py-2 text-sm font-semibold transition-colors",
                 active
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-accent/10 text-primary before:absolute before:bottom-2 before:left-0 before:top-2 before:w-0.5 before:rounded-full before:bg-accent"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
+              aria-current={active ? "page" : undefined}
             >
               <item.icon className="h-4 w-4" />
               {item.label}

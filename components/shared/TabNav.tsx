@@ -23,7 +23,7 @@ export function TabNav({ items }: { items: TabNavItem[] }) {
 
   return (
     <div className="scrollbar-thin -mx-1 mb-6 overflow-x-auto px-1">
-      <div className="inline-flex min-w-full items-center gap-1 rounded-lg bg-secondary p-1 sm:min-w-0">
+      <div className="inline-flex min-w-full items-center gap-1 rounded-full bg-secondary p-1 sm:min-w-0">
         {items.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
@@ -31,7 +31,7 @@ export function TabNav({ items }: { items: TabNavItem[] }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3.5 py-1.5 text-sm font-medium transition-all",
+                "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-all",
                 active
                   ? "bg-background text-foreground shadow-soft"
                   : "text-muted-foreground hover:text-foreground"

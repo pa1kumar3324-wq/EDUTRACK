@@ -6,129 +6,120 @@
 
 @layer base {
   :root {
-    /* ---- Sprout: a warm, growth-oriented identity ----
-       Forest green (primary / "growth") + terracotta (accent / warmth) on warm paper. */
+    /* ---- Emporum design language, adapted for EduTrack ----
+       Source: Emporum's site (obsidian #10100f, ivory #f1eee7, gold #c7a76b / #ead6a6, Manrope,
+       hairline borders, pill buttons, 20px cards). Dark is the native Emporum palette.
+       Light mode is built from Emporum's own inverted "statement" section: ivory paper, near-black
+       ink, deepened gold. Semantic colours (success/warning/destructive) do not exist in Emporum
+       and are EduTrack additions tuned to sit on the same warm neutrals.
+       Every text/background pairing below was checked against WCAG AA (see docs/DESIGN.md). */
 
-    --background: 40 38% 97%;
-    --foreground: 26 28% 13%;
+    --background: 42 26% 93%;
+    --foreground: 60 8% 7%;
 
-    --card: 40 32% 99%;
-    --card-foreground: 26 28% 13%;
+    --card: 43 37% 96%;
+    --card-foreground: 60 8% 7%;
 
-    --popover: 40 32% 99%;
-    --popover-foreground: 26 28% 13%;
+    --popover: 45 33% 98%;
+    --popover-foreground: 60 8% 7%;
 
-    --primary: 158 55% 30%;
-    --primary-foreground: 40 38% 98%;
+    --primary: 39 53% 31%;
+    --primary-foreground: 43 37% 96%;
 
-    --secondary: 40 22% 92%;
-    --secondary-foreground: 27 22% 22%;
+    --secondary: 43 22% 87%;
+    --secondary-foreground: 60 8% 12%;
 
-    --muted: 38 20% 92%;
-    --muted-foreground: 30 10% 42%;
+    --muted: 43 23% 88%;
+    --muted-foreground: 42 10% 33%;
 
-    --accent: 20 68% 48%;
-    --accent-foreground: 40 38% 98%;
+    --accent: 40 51% 33%;
+    --accent-foreground: 43 37% 96%;
 
-    --destructive: 6 62% 42%;
-    --destructive-foreground: 40 38% 98%;
+    --destructive: 3 56% 42%;
+    --destructive-foreground: 43 37% 96%;
 
-    --success: 158 55% 28%;
-    --success-foreground: 40 38% 98%;
+    --success: 144 46% 31%;
+    --success-foreground: 43 37% 96%;
 
-    --warning: 36 82% 40%;
-    --warning-foreground: 40 38% 98%;
+    --warning: 37 100% 27%;
+    --warning-foreground: 43 37% 96%;
 
-    --border: 36 20% 87%;
-    --input: 36 20% 85%;
-    --ring: 158 55% 30%;
+    --border: 44 20% 81%;
+    --input: 41 9% 48%;
+    --ring: 39 53% 31%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Full 50–900 scales for the two anchor hues, for gradients, illustration & data viz */
-    --forest-50: 150 42% 95%;
-    --forest-100: 152 40% 89%;
-    --forest-200: 154 38% 79%;
-    --forest-300: 155 36% 65%;
-    --forest-400: 157 40% 50%;
-    --forest-500: 158 50% 38%;
-    --forest-600: 158 55% 30%;
-    --forest-700: 159 58% 23%;
-    --forest-800: 160 55% 17%;
-    --forest-900: 161 50% 11%;
+    --wash: 0.07;
+    --shadow-soft: 0 1px 0 0 hsl(0 0% 100% / 0.6) inset, 0 8px 24px -16px hsl(60 8% 7% / 0.28);
+    --shadow-lift: 0 1px 0 0 hsl(0 0% 100% / 0.6) inset, 0 24px 48px -24px hsl(60 8% 7% / 0.4);
 
-    --clay-50: 24 75% 96%;
-    --clay-100: 22 68% 90%;
-    --clay-200: 21 64% 81%;
-    --clay-300: 20 62% 69%;
-    --clay-400: 20 65% 58%;
-    --clay-500: 20 68% 48%;
-    --clay-600: 19 64% 40%;
-    --clay-700: 18 60% 32%;
-    --clay-800: 17 55% 24%;
-    --clay-900: 16 50% 16%;
+    /* Gold ramp for data viz / illustration (50 = lightest tint, 900 = deepest) */
+    --gold-50: 44 65% 91%;
+    --gold-100: 42 62% 78%;
+    --gold-200: 42 55% 70%;
+    --gold-300: 39 45% 60%;
+    --gold-400: 39 37% 51%;
+    --gold-500: 37 38% 42%;
+    --gold-600: 39 53% 31%;
+    --gold-700: 40 57% 23%;
+    --gold-800: 42 62% 16%;
+    --gold-900: 41 62% 10%;
 
-    --font-display: "Fraunces", Georgia, serif;
-    --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-display: "Manrope", system-ui, Arial, sans-serif;
+    --font-body: "Manrope", system-ui, Arial, sans-serif;
   }
 
   .dark {
-    /* Genuinely separate dark palette: deep forest-ink, not an inverted light mode */
-    --background: 160 24% 6%;
-    --foreground: 40 28% 93%;
+    /* Native Emporum palette */
+    --background: 60 3% 6%;
+    --foreground: 42 26% 93%;
 
-    --card: 160 20% 9%;
-    --card-foreground: 40 28% 93%;
+    --card: 60 5% 9%;
+    --card-foreground: 42 26% 93%;
 
-    --popover: 160 22% 8%;
-    --popover-foreground: 40 28% 93%;
+    --popover: 45 8% 10%;
+    --popover-foreground: 42 26% 93%;
 
-    --primary: 152 48% 56%;
-    --primary-foreground: 160 30% 8%;
+    --primary: 42 62% 78%;
+    --primary-foreground: 50 15% 8%;
 
-    --secondary: 158 14% 15%;
-    --secondary-foreground: 40 20% 88%;
+    --secondary: 30 3% 13%;
+    --secondary-foreground: 42 26% 90%;
 
-    --muted: 158 14% 14%;
-    --muted-foreground: 40 10% 65%;
+    --muted: 40 6% 10%;
+    --muted-foreground: 43 10% 63%;
 
-    --accent: 22 72% 62%;
-    --accent-foreground: 20 40% 10%;
+    --accent: 39 45% 60%;
+    --accent-foreground: 50 15% 8%;
 
-    --destructive: 6 68% 62%;
-    --destructive-foreground: 6 40% 10%;
+    --destructive: 3 77% 73%;
+    --destructive-foreground: 5 30% 8%;
 
-    --success: 152 48% 56%;
-    --success-foreground: 160 30% 8%;
+    --success: 141 43% 67%;
+    --success-foreground: 140 30% 8%;
 
-    --warning: 38 85% 60%;
-    --warning-foreground: 30 40% 10%;
+    --warning: 36 73% 63%;
+    --warning-foreground: 37 70% 6%;
 
-    --border: 158 14% 18%;
-    --input: 158 14% 20%;
-    --ring: 152 48% 56%;
+    --border: 48 6% 16%;
+    --input: 44 7% 40%;
+    --ring: 42 62% 78%;
 
-    --forest-50: 161 50% 11%;
-    --forest-100: 160 55% 17%;
-    --forest-200: 159 58% 23%;
-    --forest-300: 158 55% 30%;
-    --forest-400: 158 50% 38%;
-    --forest-500: 157 40% 50%;
-    --forest-600: 155 36% 65%;
-    --forest-700: 154 38% 79%;
-    --forest-800: 152 40% 89%;
-    --forest-900: 150 42% 95%;
+    --wash: 0.09;
+    --shadow-soft: 0 1px 0 0 hsl(0 0% 100% / 0.05) inset, 0 12px 32px -18px hsl(0 0% 0% / 0.8);
+    --shadow-lift: 0 1px 0 0 hsl(0 0% 100% / 0.07) inset, 0 28px 60px -22px hsl(0 0% 0% / 0.9);
 
-    --clay-50: 16 50% 16%;
-    --clay-100: 17 55% 24%;
-    --clay-200: 18 60% 32%;
-    --clay-300: 19 64% 40%;
-    --clay-400: 20 68% 48%;
-    --clay-500: 20 65% 58%;
-    --clay-600: 20 62% 69%;
-    --clay-700: 21 64% 81%;
-    --clay-800: 22 68% 90%;
-    --clay-900: 24 75% 96%;
+    --gold-50: 41 62% 10%;
+    --gold-100: 42 62% 16%;
+    --gold-200: 40 57% 23%;
+    --gold-300: 39 53% 31%;
+    --gold-400: 37 38% 42%;
+    --gold-500: 39 37% 51%;
+    --gold-600: 39 45% 60%;
+    --gold-700: 42 55% 70%;
+    --gold-800: 42 62% 78%;
+    --gold-900: 44 65% 91%;
   }
 }
 
@@ -141,9 +132,22 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    /* Emporum's cursor glow, made static: a faint gold wash from the top of the page */
+    background-image: radial-gradient(900px circle at 50% -8%, hsl(var(--accent) / var(--wash)), transparent 70%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    font-feature-settings: "cv11", "ss01";
+  }
+  /* Emporum sets headings tight (-0.03em to -0.055em). Applied once here instead of per component. */
+  .font-display {
+    letter-spacing: -0.025em;
   }
   ::selection {
-    @apply bg-primary/20;
+    @apply bg-primary/25;
+  }
+  /* Emporum's focus treatment: a clear gold ring, never removed */
+  :focus-visible {
+    outline-color: hsl(var(--ring));
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -164,5 +168,43 @@
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-border rounded-full;
+  }
+
+  /* Emporum's service-card detail: a gold rule draws in along the top edge on hover/focus.
+     Use on interactive cards: add `group relative overflow-hidden` + this class. */
+  .rule-hover::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, hsl(var(--accent)), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+  }
+  .rule-hover:hover::before,
+  .rule-hover:focus-within::before {
+    transform: scaleX(1);
+  }
+
+  /* Emporum's film grain. Auth screens only: the dense working screens stay clean. */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+  }
+
+  /* Emporum's halo: concentric hairline rings behind a hero object. Decorative. */
+  .halo {
+    border: 1px solid hsl(var(--accent) / 0.17);
+    border-radius: 9999px;
+    box-shadow: 0 0 0 40px hsl(var(--accent) / 0.035), 0 0 0 80px hsl(var(--accent) / 0.02);
   }
 }

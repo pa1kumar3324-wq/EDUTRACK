@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Changed
+- **Visual redesign following Emporum's design language** (presentation only). New obsidian/ivory/gold
+  tokens for dark and light themes, Manrope typography (self-hosted), pill buttons, restyled shared
+  components, sidebar, topbar, sign-in screens, error pages and icons. Dark is now the default theme
+  for new visitors. See `docs/DESIGN.md`.
+- Added "Built by Emporum" attribution (app footer and sign-in screens). The link target is read from the
+  optional `NEXT_PUBLIC_EMPORUM_URL`; with it unset the credit renders as plain text.
+- Replaced `@fontsource/fraunces` and `@fontsource/plus-jakarta-sans` with `@fontsource/manrope`.
+- No changes to business logic, database schema, APIs, auth, validation or routes.
+
 ## [1.5.0]
 
 ### Added

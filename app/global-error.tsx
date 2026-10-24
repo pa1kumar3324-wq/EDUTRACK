@@ -20,27 +20,28 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           alignItems: "center",
           justifyContent: "center",
           gap: 16,
-          fontFamily: "system-ui, sans-serif",
-          background: "#f7f2e9",
-          color: "#241a0d",
+          fontFamily: "Manrope, system-ui, Arial, sans-serif",
+          background: "#10100f",
+          color: "#f1eee7",
           padding: 24,
           textAlign: "center",
         }}
       >
-        <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>EduTrack hit a problem</h1>
-        <p style={{ maxWidth: 360, color: "#6b5f4f", fontSize: 14 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>EduTrack hit a problem</h1>
+        <p style={{ maxWidth: 360, color: "#aaa598", fontSize: 14 }}>
           The app failed to load. Try reloading. If this keeps happening, let an admin know.
         </p>
-        {error.digest && <p style={{ fontSize: 12, color: "#a89a84" }}>Reference: {error.digest}</p>}
+        {error.digest && <p style={{ fontSize: 12, color: "#8d887c" }}>Reference: {error.digest}</p>}
         <button
           onClick={() => reset()}
           style={{
-            padding: "8px 16px",
-            borderRadius: 10,
+            padding: "10px 22px",
+            borderRadius: 999,
             border: "none",
-            background: "#1c5b40",
-            color: "#f7f2e9",
+            background: "#ead6a6",
+            color: "#171611",
             fontSize: 14,
+            fontWeight: 700,
             cursor: "pointer",
           }}
         >

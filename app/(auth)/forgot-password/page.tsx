@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { AuthFrame } from "@/components/layout/AuthFrame";
 
 /**
  * Self-serve "forgot password" entry point (linked from /login). Sends a
@@ -64,58 +65,53 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-
-      <div className="w-full max-w-sm">
-        <h1 className="mb-8 font-display text-xl font-semibold">EduTrack</h1>
-
-        <Card>
-          {submitted ? (
-            <CardContent className="flex flex-col gap-3 py-6 text-center">
-              <CardTitle>Check your email</CardTitle>
-              <CardDescription>
-                If an account exists for <span className="font-medium text-foreground">{email}</span>, we&apos;ve
-                sent a link to reset your password.
-              </CardDescription>
+    <AuthFrame>
+      <Card className="border-accent/25 shadow-soft-lg">
+        {submitted ? (
+          <CardContent className="flex flex-col gap-3 py-6 text-center">
+            <CardTitle>Check your email</CardTitle>
+            <CardDescription>
+              If an account exists for <span className="font-medium text-foreground">{email}</span>, we&apos;ve
+              sent a link to reset your password.
+            </CardDescription>
+          </CardContent>
+        ) : (
+          <>
+            <CardHeader>
+              <CardTitle>Forgot password</CardTitle>
+              <CardDescription>We&apos;ll email you a link to set a new one.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@ngo.org"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                </div>
+                <Button type="submit" disabled={isLoading} className="mt-1">
+                  {isLoading && <Loader2 className="animate-spin" />}
+                  Send reset link
+                </Button>
+              </form>
             </CardContent>
-          ) : (
-            <>
-              <CardHeader>
-                <CardTitle>Forgot password</CardTitle>
-                <CardDescription>We&apos;ll email you a link to set a new one.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@ngo.org"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      autoComplete="email"
-                    />
-                  </div>
-                  <Button type="submit" disabled={isLoading} className="mt-1">
-                    {isLoading && <Loader2 className="animate-spin" />}
-                    Send reset link
-                  </Button>
-                </form>
-              </CardContent>
-            </>
-          )}
-        </Card>
+          </>
+        )}
+      </Card>
 
-        <Link
-          href="/login"
-          className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to sign in
-        </Link>
-      </div>
-    </div>
+      <Link
+        href="/login"
+        className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to sign in
+      </Link>
+    </AuthFrame>
   );
 }

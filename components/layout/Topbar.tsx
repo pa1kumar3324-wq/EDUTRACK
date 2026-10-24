@@ -33,7 +33,7 @@ export function Topbar({ user, title }: { user: AuthUser; title?: string }) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md md:px-6">
       <div className="flex shrink-0 items-center gap-2">
         <MobileNav user={user} />
         {title && <h1 className="hidden font-display text-sm font-semibold md:block md:text-base">{title}</h1>}
@@ -56,7 +56,7 @@ export function Topbar({ user, title }: { user: AuthUser; title?: string }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg px-1.5 py-1 hover:bg-secondary">
+            <button className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:pr-3">
               <Avatar className="h-7 w-7">
                 <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} />
                 <AvatarFallback>{initials(user.displayName)}</AvatarFallback>

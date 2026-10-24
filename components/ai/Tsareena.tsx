@@ -218,7 +218,7 @@ export function Tsareena({ userId }: { userId: string }) {
           }}
           aria-label={store.isOpen ? "Close Tsareena assistant" : "Open Tsareena assistant"}
           title="Tsareena"
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card shadow-soft-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 md:h-14 md:w-14"
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-accent/40 bg-card shadow-soft-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 md:h-14 md:w-14"
         >
           <TsareenaAvatar size={32} state={store.isOpen ? "curious" : store.avatarState} />
         </button>

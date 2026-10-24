@@ -16,33 +16,21 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-body)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
+        sans: ["var(--font-body)", "system-ui", "Arial", "sans-serif"],
+        display: ["var(--font-display)", "system-ui", "Arial", "sans-serif"],
       },
       colors: {
-        forest: {
-          50: "hsl(var(--forest-50))",
-          100: "hsl(var(--forest-100))",
-          200: "hsl(var(--forest-200))",
-          300: "hsl(var(--forest-300))",
-          400: "hsl(var(--forest-400))",
-          500: "hsl(var(--forest-500))",
-          600: "hsl(var(--forest-600))",
-          700: "hsl(var(--forest-700))",
-          800: "hsl(var(--forest-800))",
-          900: "hsl(var(--forest-900))",
-        },
-        clay: {
-          50: "hsl(var(--clay-50))",
-          100: "hsl(var(--clay-100))",
-          200: "hsl(var(--clay-200))",
-          300: "hsl(var(--clay-300))",
-          400: "hsl(var(--clay-400))",
-          500: "hsl(var(--clay-500))",
-          600: "hsl(var(--clay-600))",
-          700: "hsl(var(--clay-700))",
-          800: "hsl(var(--clay-800))",
-          900: "hsl(var(--clay-900))",
+        gold: {
+          50: "hsl(var(--gold-50))",
+          100: "hsl(var(--gold-100))",
+          200: "hsl(var(--gold-200))",
+          300: "hsl(var(--gold-300))",
+          400: "hsl(var(--gold-400))",
+          500: "hsl(var(--gold-500))",
+          600: "hsl(var(--gold-600))",
+          700: "hsl(var(--gold-700))",
+          800: "hsl(var(--gold-800))",
+          900: "hsl(var(--gold-900))",
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -94,8 +82,11 @@ const config: Config = {
         "2xl": "calc(var(--radius) + 18px)",
       },
       boxShadow: {
-        soft: "0 1px 2px 0 rgb(30 20 10 / 0.05), 0 1px 6px -1px rgb(30 20 10 / 0.06)",
-        "soft-lg": "0 8px 28px -6px rgb(30 20 10 / 0.14), 0 2px 8px -2px rgb(30 20 10 / 0.06)",
+        // Emporum depth: a hairline top highlight plus a long, soft, dark drop. Values come from CSS
+        // variables so light mode can use a gentler ink shadow instead of near-black.
+        soft: "var(--shadow-soft)",
+        "soft-lg": "var(--shadow-lift)",
+        glow: "0 14px 34px hsl(var(--accent) / 0.19)",
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },
@@ -103,6 +94,7 @@ const config: Config = {
         "fade-in": { from: { opacity: "0" }, to: { opacity: "1" } },
         "scale-in": { from: { opacity: "0", transform: "scale(0.96)" }, to: { opacity: "1", transform: "scale(1)" } },
         float: { "0%, 100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-6px)" } },
+        rise: { from: { opacity: "0", transform: "translateY(16px) scale(0.98)" }, to: { opacity: "1", transform: "none" } },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -110,6 +102,7 @@ const config: Config = {
         "fade-in": "fade-in 0.15s ease-out",
         "scale-in": "scale-in 0.15s ease-out",
         float: "float 4s ease-in-out infinite",
+        rise: "rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
       },
     },
   },

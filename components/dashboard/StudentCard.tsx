@@ -26,7 +26,7 @@ export function StudentCard({ data, index = 0 }: { data: StudentWithProgress; in
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.3) }}
     >
-      <Card className="group h-full">
+      <Card className="group rule-hover relative h-full overflow-hidden transition-[transform,border-color] duration-300 hover:-translate-y-1 hover:border-accent/45">
         <CardContent className="flex h-full flex-col gap-4 p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">

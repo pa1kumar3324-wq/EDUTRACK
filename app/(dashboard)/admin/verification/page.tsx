@@ -45,7 +45,7 @@ export default async function AdminVerificationPage({
       {/* Not TabNav: these two views differ by query string, and TabNav
           decides "active" from the pathname alone, so both tabs would read
           as selected. Server-rendered links keep the scope shareable. */}
-      <div className="mb-6 inline-flex items-center gap-1 self-start rounded-lg bg-secondary p-1">
+      <div className="mb-6 inline-flex items-center gap-1 self-start rounded-full bg-secondary p-1">
         {[
           { href: "/admin/verification", label: `My circles (${ledByMe.length})`, active: !showAll },
           { href: "/admin/verification?scope=all", label: "All circles", active: showAll },
@@ -54,7 +54,7 @@ export default async function AdminVerificationPage({
             key={tab.href}
             href={tab.href}
             className={cn(
-              "inline-flex shrink-0 items-center whitespace-nowrap rounded-md px-3.5 py-1.5 text-sm font-medium transition-all",
+              "inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-all",
               tab.active
                 ? "bg-background text-foreground shadow-soft"
                 : "text-muted-foreground hover:text-foreground"
